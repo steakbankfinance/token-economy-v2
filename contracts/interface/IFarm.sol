@@ -10,6 +10,7 @@ interface IFarm {
 
     function deposit(uint256 _pid, uint256 _amount, address userAddr) external;
     function withdraw(uint256 _pid, uint256 _amount, address userAddr) external;
+    function redeemSBF(address recipient) external;
 
     function pendingSBF(uint256 _pid, address _user) external view returns (uint256);
     function getUserAmount(uint256 _pid, address _user) external view returns (uint256);

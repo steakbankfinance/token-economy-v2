@@ -29,4 +29,9 @@ contract SBFRewardVault is Ownable {
             return balance;
         }
     }
+
+    function redeemSBF(address recipient) onlyOwner external {
+        uint256 balance = sbf.balanceOf(address(this));
+        sbf.safeTransfer(recipient, balance);
+    }
 }

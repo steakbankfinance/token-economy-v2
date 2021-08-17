@@ -211,6 +211,10 @@ contract FarmingPhase3 is Ownable, IFarm {
         emit Withdraw(_userAddr, _pid, _amount, reward, taxAmount);
     }
 
+    function redeemSBF(address recipient) override external onlyOwner {
+        sbfRewardVault.redeemSBF(recipient);
+    }
+
     function rewardSBF(uint256 _pid, address _to, uint256 _amount) internal returns (uint256, uint256) {
         PoolInfo memory pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_to];
