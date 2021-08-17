@@ -37,7 +37,8 @@ contract FarmingCenter is Ownable {
         IFarm _farmingPhase1,
         IFarm _farmingPhase2,
         IFarm _farmingPhase3,
-        IFarm _farmingPhase4
+        IFarm _farmingPhase4,
+        address _taxVault
     ) public {
         require(!initialized, "already initialized");
         initialized = true;
@@ -51,10 +52,10 @@ contract FarmingCenter is Ownable {
         farmingPhase3 = _farmingPhase3;
         farmingPhase4 = _farmingPhase4;
 
-        farmingPhase1.initialize(address(this), _sbf);
-        farmingPhase2.initialize(address(this), _sbf);
-        farmingPhase3.initialize(address(this), _sbf);
-        farmingPhase4.initialize(address(this), _sbf);
+        farmingPhase1.initialize(address(this), _sbf, _taxVault);
+        farmingPhase2.initialize(address(this), _sbf, _taxVault);
+        farmingPhase3.initialize(address(this), _sbf, _taxVault);
+        farmingPhase4.initialize(address(this), _sbf, _taxVault);
     }
 
     function startFarmingPeriod(uint256 farmingPeriod, uint256 startHeight, uint256 sbfRewardPerBlock) public onlyOwner {
@@ -64,11 +65,11 @@ contract FarmingCenter is Ownable {
         farmingPhase4.startFarmingPeriod(farmingPeriod, startHeight, sbfRewardPerBlock.mul(30).div(100));
     }
 
-    function addPool(uint256 _allocPoint, IBEP20 _lpToken, bool _withUpdate) public onlyOwner {
-        farmingPhase1.addPool(_allocPoint, _lpToken, _withUpdate);
-        farmingPhase2.addPool(_allocPoint, _lpToken, _withUpdate);
-        farmingPhase3.addPool(_allocPoint, _lpToken, _withUpdate);
-        farmingPhase4.addPool(_allocPoint, _lpToken, _withUpdate);
+    function addPool(uint256 _allocPoint, IBEP20 _lpToken, uint256 maxTaxPercent, uint256 miniTaxFreeDay, bool _withUpdate) public onlyOwner {
+        farmingPhase1.addPool(_allocPoint, _lpToken, maxTaxPercent, miniTaxFreeDay, _withUpdate);
+        farmingPhase2.addPool(_allocPoint, _lpToken, maxTaxPercent, miniTaxFreeDay, _withUpdate);
+        farmingPhase3.addPool(_allocPoint, _lpToken, maxTaxPercent, miniTaxFreeDay, _withUpdate);
+        farmingPhase4.addPool(_allocPoint, _lpToken, maxTaxPercent, miniTaxFreeDay, _withUpdate);
     }
 
     function set(uint256 _pid, uint256 _allocPoint, bool _withUpdate) public onlyOwner {
