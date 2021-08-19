@@ -145,15 +145,15 @@ contract FarmingCenter is Ownable {
 
     function depositSBFPool(uint256 _amount) public {
         UserInfo storage userInfo = userInfos[SBF_POOL_ID][msg.sender];
-        userInfo.amount = userInfo.amount.add(_amount);
-        sbf.safeTransferFrom(address(msg.sender), address(this), _amount);
-
         if (userInfo.amount > 0) {
             farmingPhase4.withdraw(SBF_POOL_ID, userInfo.amount, msg.sender);
             farmingPhase3.withdraw(SBF_POOL_ID, userInfo.amount, msg.sender);
             farmingPhase2.withdraw(SBF_POOL_ID, userInfo.amount, msg.sender);
             farmingPhase1.withdraw(SBF_POOL_ID, userInfo.amount, msg.sender);
         }
+
+        sbf.safeTransferFrom(address(msg.sender), address(this), _amount);
+        userInfo.amount = userInfo.amount.add(_amount);
         farmingPhase1.deposit(SBF_POOL_ID, _amount, msg.sender);
     }
 
@@ -172,13 +172,14 @@ contract FarmingCenter is Ownable {
 
     function depositLBNB2BNBPool(uint256 _amount) public {
         UserInfo storage userInfo = userInfos[LP_LBNB_BNB_POOL_ID][msg.sender];
-        userInfo.amount = userInfo.amount.add(_amount);
-        lpLBNB2BNB.safeTransferFrom(address(msg.sender), address(this), _amount);
 
         farmingPhase4.deposit(LP_LBNB_BNB_POOL_ID, _amount, msg.sender);
         farmingPhase3.deposit(LP_LBNB_BNB_POOL_ID, _amount, msg.sender);
         farmingPhase2.deposit(LP_LBNB_BNB_POOL_ID, _amount, msg.sender);
         farmingPhase1.deposit(LP_LBNB_BNB_POOL_ID, _amount, msg.sender);
+
+        lpLBNB2BNB.safeTransferFrom(address(msg.sender), address(this), _amount);
+        userInfo.amount = userInfo.amount.add(_amount);
     }
 
     function withdrawLBNB2BNBPool(uint256 _amount) public {
@@ -196,12 +197,13 @@ contract FarmingCenter is Ownable {
 
     function depositSBF2BUSDPool(uint256 _amount) public {
         UserInfo storage userInfo = userInfos[LP_SBF_BUSD_POOL_ID][msg.sender];
-        userInfo.amount = userInfo.amount.add(_amount);
-        lpSBF2BUSD.safeTransferFrom(address(msg.sender), address(this), _amount);
 
         farmingPhase3.deposit(LP_SBF_BUSD_POOL_ID, _amount, msg.sender);
         farmingPhase2.deposit(LP_SBF_BUSD_POOL_ID, _amount, msg.sender);
         farmingPhase1.deposit(LP_SBF_BUSD_POOL_ID, _amount, msg.sender);
+
+        userInfo.amount = userInfo.amount.add(_amount);
+        lpSBF2BUSD.safeTransferFrom(address(msg.sender), address(this), _amount);
     }
 
     function withdrawSBF2BUSDPool(uint256 _amount) public {

@@ -5,7 +5,7 @@ import "./lib/Ownable.sol";
 
 import "./interface/IFarm.sol";
 
-contract FarmingPhase2 is Ownable, IFarm {
+contract FarmingPhase is Ownable, IFarm {
     using SafeMath for uint256;
     using SafeBEP20 for IBEP20;
 
@@ -63,7 +63,7 @@ contract FarmingPhase2 is Ownable, IFarm {
         require(block.number <= startHeight, "Start height must be in the future");
         require(sbfRewardPerBlock > 0, "sbfRewardPerBlock must be larger than 0");
         require(farmingPeriod > 0, "farmingPeriod must be larger than 0");
-
+        
         massUpdatePools();
 
         uint256 totalSBFAmount = farmingPeriod.mul(sbfRewardPerBlock);
@@ -90,12 +90,12 @@ contract FarmingPhase2 is Ownable, IFarm {
         uint256 lastRewardBlock = block.number > startBlock ? block.number : startBlock;
         totalAllocPoint = totalAllocPoint.add(_allocPoint);
         poolInfo.push(PoolInfo({
-        lpToken: _lpToken,
-        allocPoint: _allocPoint,
-        lastRewardBlock: lastRewardBlock,
-        accSBFPerShare: 0,
-        maxTaxPercent: maxTaxPercent,
-        miniTaxFreeDay: miniTaxFreeDay
+            lpToken: _lpToken,
+            allocPoint: _allocPoint,
+            lastRewardBlock: lastRewardBlock,
+            accSBFPerShare: 0,
+            maxTaxPercent: maxTaxPercent,
+            miniTaxFreeDay: miniTaxFreeDay
         }));
     }
 
