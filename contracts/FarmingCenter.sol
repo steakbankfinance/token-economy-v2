@@ -35,9 +35,9 @@ contract FarmingCenter is Ownable {
 
     mapping(uint256 => mapping(address => UserInfo)) public userInfos;
 
-    event Deposit(address indexed user, uint256 indexed pid, uint256 amount, uint256 reward);
-    event Withdraw(address indexed user, uint256 indexed pid, uint256 amount, uint256 reward);
-    event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount);
+    event Deposit(address indexed userInfo, uint256 indexed pid, uint256 amount, uint256 reward);
+    event Withdraw(address indexed userInfo, uint256 indexed pid, uint256 amount, uint256 reward);
+    event EmergencyWithdraw(address indexed userInfo, uint256 indexed pid, uint256 amount);
 
     constructor() public {}
 
@@ -145,28 +145,44 @@ contract FarmingCenter is Ownable {
 
     function depositSBFPool(uint256 _amount) public {
         UserInfo storage userInfo = userInfos[SBF_POOL_ID][msg.sender];
-        if (userInfo.amount > 0) {
+        if (farmingPhase4.getUserAmount(SBF_POOL_ID, msg.sender) > 0) {
             farmingPhase4.withdraw(SBF_POOL_ID, userInfo.amount, msg.sender);
+        }
+        if (farmingPhase3.getUserAmount(SBF_POOL_ID, msg.sender) > 0) {
             farmingPhase3.withdraw(SBF_POOL_ID, userInfo.amount, msg.sender);
+        }
+        if (farmingPhase2.getUserAmount(SBF_POOL_ID, msg.sender) > 0) {
             farmingPhase2.withdraw(SBF_POOL_ID, userInfo.amount, msg.sender);
-            farmingPhase1.withdraw(SBF_POOL_ID, userInfo.amount, msg.sender);
+        }
+        if (farmingPhase1.getUserAmount(SBF_POOL_ID, msg.sender) > 0) {
+            farmingPhase1.withdraw(SBF_POOL_ID, 0, msg.sender);
         }
 
         sbf.safeTransferFrom(address(msg.sender), address(this), _amount);
         userInfo.amount = userInfo.amount.add(_amount);
+        userInfo.timestamp = block.timestamp;
         farmingPhase1.deposit(SBF_POOL_ID, _amount, msg.sender);
     }
 
     function withdrawSBFPool(uint256 _amount) public {
         UserInfo storage userInfo = userInfos[SBF_POOL_ID][msg.sender];
         require(userInfo.amount >= _amount, "withdraw: not good");
-        
-        farmingPhase4.withdraw(SBF_POOL_ID, userInfo.amount, msg.sender);
-        farmingPhase3.withdraw(SBF_POOL_ID, userInfo.amount, msg.sender);
-        farmingPhase2.withdraw(SBF_POOL_ID, userInfo.amount, msg.sender);
-        farmingPhase1.withdraw(SBF_POOL_ID, _amount, msg.sender);
+
+        if (farmingPhase4.getUserAmount(SBF_POOL_ID, msg.sender) > 0) {
+            farmingPhase4.withdraw(SBF_POOL_ID, userInfo.amount, msg.sender);
+        }
+        if (farmingPhase3.getUserAmount(SBF_POOL_ID, msg.sender) > 0) {
+            farmingPhase3.withdraw(SBF_POOL_ID, userInfo.amount, msg.sender);
+        }
+        if (farmingPhase2.getUserAmount(SBF_POOL_ID, msg.sender) > 0) {
+            farmingPhase2.withdraw(SBF_POOL_ID, userInfo.amount, msg.sender);
+        }
+        if (farmingPhase1.getUserAmount(SBF_POOL_ID, msg.sender) > 0) {
+            farmingPhase1.withdraw(SBF_POOL_ID, _amount, msg.sender);
+        }
         
         userInfo.amount = userInfo.amount.sub(_amount);
+        userInfo.timestamp = block.timestamp;
         sbf.safeTransfer(address(msg.sender), _amount);
     }
 
@@ -180,6 +196,7 @@ contract FarmingCenter is Ownable {
 
         lpLBNB2BNB.safeTransferFrom(address(msg.sender), address(this), _amount);
         userInfo.amount = userInfo.amount.add(_amount);
+        userInfo.timestamp = block.timestamp;
     }
 
     function withdrawLBNB2BNBPool(uint256 _amount) public {
@@ -192,6 +209,7 @@ contract FarmingCenter is Ownable {
         farmingPhase1.withdraw(LP_LBNB_BNB_POOL_ID, _amount, msg.sender);
 
         userInfo.amount = userInfo.amount.sub(_amount);
+        userInfo.timestamp = block.timestamp;
         lpLBNB2BNB.safeTransfer(address(msg.sender), _amount);
     }
 
@@ -203,6 +221,7 @@ contract FarmingCenter is Ownable {
         farmingPhase1.deposit(LP_SBF_BUSD_POOL_ID, _amount, msg.sender);
 
         userInfo.amount = userInfo.amount.add(_amount);
+        userInfo.timestamp = block.timestamp;
         lpSBF2BUSD.safeTransferFrom(address(msg.sender), address(this), _amount);
     }
 
@@ -215,35 +234,52 @@ contract FarmingCenter is Ownable {
         farmingPhase1.withdraw(LP_SBF_BUSD_POOL_ID, _amount, msg.sender);
 
         userInfo.amount = userInfo.amount.sub(_amount);
+        userInfo.timestamp = block.timestamp;
         lpSBF2BUSD.safeTransfer(address(msg.sender), _amount);
     }
 
     function emergencyWithdrawSBF() public {
-        UserInfo storage user = userInfos[SBF_POOL_ID][msg.sender];
-        sbf.safeTransfer(address(msg.sender), user.amount);
-        emit EmergencyWithdraw(msg.sender, SBF_POOL_ID, user.amount);
-        user.amount = 0;
+        UserInfo storage userInfo = userInfos[SBF_POOL_ID][msg.sender];
+        sbf.safeTransfer(address(msg.sender), userInfo.amount);
+        emit EmergencyWithdraw(msg.sender, SBF_POOL_ID, userInfo.amount);
+        userInfo.amount = 0;
     }
 
     function emergencyWithdrawLBNB2BNBLP() public {
-        UserInfo storage user = userInfos[LP_LBNB_BNB_POOL_ID][msg.sender];
-        lpLBNB2BNB.safeTransfer(address(msg.sender), user.amount);
-        emit EmergencyWithdraw(msg.sender, LP_LBNB_BNB_POOL_ID, user.amount);
-        user.amount = 0;
+        UserInfo storage userInfo = userInfos[LP_LBNB_BNB_POOL_ID][msg.sender];
+        lpLBNB2BNB.safeTransfer(address(msg.sender), userInfo.amount);
+        emit EmergencyWithdraw(msg.sender, LP_LBNB_BNB_POOL_ID, userInfo.amount);
+        userInfo.amount = 0;
     }
 
     function emergencyWithdrawSBF2BUSDLP() public {
-        UserInfo storage user = userInfos[LP_SBF_BUSD_POOL_ID][msg.sender];
-        lpSBF2BUSD.safeTransfer(address(msg.sender), user.amount);
-        emit EmergencyWithdraw(msg.sender, LP_SBF_BUSD_POOL_ID, user.amount);
-        user.amount = 0;
+        UserInfo storage userInfo = userInfos[LP_SBF_BUSD_POOL_ID][msg.sender];
+        lpSBF2BUSD.safeTransfer(address(msg.sender), userInfo.amount);
+        emit EmergencyWithdraw(msg.sender, LP_SBF_BUSD_POOL_ID, userInfo.amount);
+        userInfo.amount = 0;
     }
 
-    function migrateAgeFarming() public {
-
+    function migrateSBFPoolAgeFarming(address user) public {
+        bool needMigration = false;
+        UserInfo storage userInfo = userInfos[SBF_POOL_ID][user];
+        if (block.timestamp-userInfo.timestamp>7*86400 && farmingPhase2.getUserAmount(SBF_POOL_ID, user)==0) {
+            farmingPhase2.deposit(SBF_POOL_ID, userInfo.amount, user);
+            needMigration = true;
+        }
+        if (block.timestamp-userInfo.timestamp>30*86400 && farmingPhase3.getUserAmount(SBF_POOL_ID, user)==0) {
+            farmingPhase3.deposit(SBF_POOL_ID, userInfo.amount, user);
+            needMigration = true;
+        }
+        if (block.timestamp-userInfo.timestamp>60*86400 && farmingPhase4.getUserAmount(SBF_POOL_ID, user)==0) {
+            farmingPhase4.deposit(SBF_POOL_ID, userInfo.amount, user);
+            needMigration = true;
+        }
+        require(needMigration, "no need to migration");
     }
 
-    function batchMigrateAgeFarming(address[] memory users) public {
-
+    function batchMigrateSBFPoolAgeFarming(address[] memory users) public {
+        for(uint256 idx=0;idx<users.length;idx++){
+            migrateSBFPoolAgeFarming(users[idx]);
+        }
     }
 }

@@ -59,7 +59,6 @@ contract FarmingPhase is Ownable, IFarm {
     }
 
     function startFarmingPeriod(uint256 farmingPeriod, uint256 startHeight, uint256 sbfRewardPerBlock) override external onlyOwner {
-        require(block.number > endBlock, "Previous farming is not completed yet");
         require(block.number <= startHeight, "Start height must be in the future");
         require(sbfRewardPerBlock > 0, "sbfRewardPerBlock must be larger than 0");
         require(farmingPeriod > 0, "farmingPeriod must be larger than 0");
