@@ -5,7 +5,7 @@ import "./lib/Ownable.sol";
 
 import "./interface/IFarm.sol";
 
-contract FarmingPhase is Ownable, IFarm {
+contract FarmingPhase2 is Ownable, IFarm {
     using SafeMath for uint256;
     using SafeBEP20 for IBEP20;
 
