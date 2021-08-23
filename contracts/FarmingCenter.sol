@@ -4,6 +4,7 @@ import "./lib/SBFRewardVault.sol";
 import "./lib/Ownable.sol";
 
 import "./interface/IFarm.sol";
+import "./interface/IMintBurnToken.sol";
 
 contract FarmingCenter is Ownable {
     using SafeMath for uint256;
@@ -20,6 +21,8 @@ contract FarmingCenter is Ownable {
 
     bool public initialized;
     bool public pool_initialized;
+
+    address public aSBF;
 
     IBEP20 public sbf;
     IBEP20 public lpLBNB2BNB;
@@ -43,6 +46,7 @@ contract FarmingCenter is Ownable {
 
     function initialize(
         address _owner,
+        address _aSBF,
         IBEP20 _sbf,
         IBEP20 _lpLBNB2BNB,
         IBEP20 _lpSBF2BUSD,
@@ -57,6 +61,8 @@ contract FarmingCenter is Ownable {
         initialized = true;
 
         super.initializeOwner(_owner);
+
+        aSBF = _aSBF;
 
         sbf = _sbf;
         lpLBNB2BNB = _lpLBNB2BNB;
@@ -162,9 +168,13 @@ contract FarmingCenter is Ownable {
         userInfo.amount = userInfo.amount.add(_amount);
         userInfo.timestamp = block.timestamp;
         farmingPhase1.deposit(SBF_POOL_ID, _amount, msg.sender);
+        IMintBurnToken(aSBF).mintTo(msg.sender, _amount);
     }
 
     function withdrawSBFPool(uint256 _amount) public {
+        IBEP20(aSBF).transferFrom(msg.sender, address(this), _amount);
+        IMintBurnToken(aSBF).burn(_amount);
+
         UserInfo storage userInfo = userInfos[SBF_POOL_ID][msg.sender];
         require(userInfo.amount >= _amount, "withdraw: not good");
 

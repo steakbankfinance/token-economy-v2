@@ -12,7 +12,7 @@
     "coverage": "truffle run coverage --network development",
     "lint": "npm run lint:sol",
     "lint:sol": "solhint 'contracts/*.sol' && solhint 'contracts/**/*.sol'",
-    "flatten": "truffle-flattener contracts/FarmingCenterUpgradeableProxy.sol > flatten/FarmingCenterUpgradeableProxy.sol && truffle-flattener contracts/FarmingCenter.sol > flatten/FarmingCenter.sol && truffle-flattener contracts/FarmingPhase.sol > flatten/FarmingPhase.sol"
+    "flatten": "truffle-flattener contracts/aSBF.sol > flatten/aSBF.sol && truffle-flattener contracts/FarmingCenterUpgradeableProxy.sol > flatten/FarmingCenterUpgradeableProxy.sol && truffle-flattener contracts/FarmingCenter.sol > flatten/FarmingCenter.sol && truffle-flattener contracts/FarmingPhase.sol > flatten/FarmingPhase.sol"
   },
   "author": "",
   "license": "Apache License",
