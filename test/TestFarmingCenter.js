@@ -1,7 +1,10 @@
 const SBF = artifacts.require("SBF");
 const SBF2BUSDLPToken = artifacts.require("SBF2BUSDLPToken");
 const LBNB2BNBLPToken = artifacts.require("LBNB2BNBLPToken");
+
 const aSBF = artifacts.require("aSBF");
+const aLBNB2BNBLP = artifacts.require("aLBNB2BNBLP");
+const aSBF2BUSDLP = artifacts.require("aSBF2BUSDLP");
 
 const FarmingPhase1 = artifacts.require("FarmingPhase1");
 const FarmingPhase2 = artifacts.require("FarmingPhase2");
@@ -23,8 +26,6 @@ contract('SteakBank Contract', (accounts) => {
         await sbfInst.approve(FarmingCenter.address, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e10)), {from: accounts[0]});
         await farmingCenterInst.initPools(
             [30,40,30],
-            [0,40,30],
-            [80,80,80],
             {from: accounts[0]}
         );
 
@@ -48,13 +49,5 @@ contract('SteakBank Contract', (accounts) => {
 
         const endBlock = await farmingPhase1Inst.endBlock();
         assert.equal(endBlock, "1100", "wrong endBlock");
-
-        const{lpToken,allocPoint,lastRewardBlock,accSBFPerShare,maxTaxPercent,miniTaxFreeDay} = await farmingPhase1Inst.poolInfo("0");
-        console.log(lpToken);
-        console.log(allocPoint);
-        console.log(lastRewardBlock);
-        console.log(accSBFPerShare);
-        console.log(maxTaxPercent);
-        console.log(miniTaxFreeDay);
     });
 });

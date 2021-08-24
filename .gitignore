@@ -17,3 +17,5 @@
 node_modules
 build
 flatten/*.sol
+coverage
+coverage.json
