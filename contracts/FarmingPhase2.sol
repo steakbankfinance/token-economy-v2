@@ -11,6 +11,7 @@ contract FarmingPhase2 is Ownable, IFarm {
 
     struct UserInfo {
         uint256 amount;
+        uint256 timestamp;
         uint256 rewardDebt;
     }
 
@@ -19,6 +20,8 @@ contract FarmingPhase2 is Ownable, IFarm {
         uint256 allocPoint;
         uint256 lastRewardBlock;
         uint256 accSBFPerShare;
+        uint256 maxTaxPercent;
+        uint256 miniTaxFreeDay;
     }
 
     uint256 constant public REWARD_CALCULATE_PRECISION = 1e12;
@@ -28,6 +31,7 @@ contract FarmingPhase2 is Ownable, IFarm {
     IBEP20 public sbf;
     SBFRewardVault public sbfRewardVault;
 
+    address public taxVault;
     uint256 public sbfPerBlock;
     uint256 public totalAllocPoint;
     uint256 public startBlock;
@@ -44,7 +48,7 @@ contract FarmingPhase2 is Ownable, IFarm {
 
     constructor() public {}
 
-    function initialize(address _owner, IBEP20 _sbf) override external {
+    function initialize(address _owner, IBEP20 _sbf, address _taxVault) override external {
         require(!initialized, "already initialized");
         initialized = true;
 
@@ -52,6 +56,7 @@ contract FarmingPhase2 is Ownable, IFarm {
 
         super.initializeOwner(_owner);
         sbf = _sbf;
+        taxVault = _taxVault;
     }
 
     function startFarmingPeriod(uint256 farmingPeriod, uint256 startHeight, uint256 sbfRewardPerBlock) override external onlyOwner {
@@ -74,7 +79,7 @@ contract FarmingPhase2 is Ownable, IFarm {
         }
     }
 
-    function addPool(uint256 _allocPoint, IBEP20 _lpToken, bool _withUpdate) override external onlyOwner {
+    function addPool(uint256 _allocPoint, IBEP20 _lpToken, uint256 _maxTaxPercent, uint256 _miniTaxFreeDay, bool _withUpdate) override external onlyOwner {
         for (uint256 pid = 0; pid < poolInfo.length; ++pid) {
             PoolInfo memory pool = poolInfo[pid];
             require(pool.lpToken!=_lpToken, "duplicated pool");
@@ -84,11 +89,13 @@ contract FarmingPhase2 is Ownable, IFarm {
         }
         uint256 lastRewardBlock = block.number > startBlock ? block.number : startBlock;
         totalAllocPoint = totalAllocPoint.add(_allocPoint);
-            poolInfo.push(PoolInfo({
-            lpToken: _lpToken,
-            allocPoint: _allocPoint,
-            lastRewardBlock: lastRewardBlock,
-            accSBFPerShare: 0
+        poolInfo.push(PoolInfo({
+        lpToken: _lpToken,
+        allocPoint: _allocPoint,
+        lastRewardBlock: lastRewardBlock,
+        accSBFPerShare: 0,
+        maxTaxPercent: _maxTaxPercent,
+        miniTaxFreeDay: _miniTaxFreeDay
         }));
     }
 
@@ -167,13 +174,14 @@ contract FarmingPhase2 is Ownable, IFarm {
             uint256 pending = user.amount.mul(pool.accSBFPerShare).div(REWARD_CALCULATE_PRECISION).sub(user.rewardDebt);
 
             if (pending > 0) {
-                sbfRewardVault.safeTransferSBF(_userAddr, pending);
+                (reward, taxAmount) = rewardSBF(_pid, _userAddr, pending);
             }
         }
         if (_amount > 0) {
             user.amount = user.amount.add(_amount);
         }
         user.rewardDebt = user.amount.mul(pool.accSBFPerShare).div(REWARD_CALCULATE_PRECISION);
+        user.timestamp = block.timestamp;
         lpSupplyMap[_pid] = lpSupplyMap[_pid].add(_amount);
         emit Deposit(_userAddr, _pid, _amount, reward, taxAmount);
     }
@@ -189,13 +197,14 @@ contract FarmingPhase2 is Ownable, IFarm {
         uint256 reward;
         uint256 taxAmount;
         if (pending > 0) {
-            sbfRewardVault.safeTransferSBF(_userAddr, pending);
+            (reward, taxAmount) = rewardSBF(_pid, _userAddr, pending);
         }
 
         if (_amount > 0) {
             user.amount = user.amount.sub(_amount);
         }
         user.rewardDebt = user.amount.mul(pool.accSBFPerShare).div(REWARD_CALCULATE_PRECISION);
+        user.timestamp = block.timestamp;
         lpSupplyMap[_pid] = lpSupplyMap[_pid].sub(_amount);
         emit Withdraw(_userAddr, _pid, _amount, reward, taxAmount);
     }
@@ -206,5 +215,20 @@ contract FarmingPhase2 is Ownable, IFarm {
 
     function lpSupply(uint256 _pid) override external view returns (uint256) {
         return lpSupplyMap[_pid];
+    }
+
+    function rewardSBF(uint256 _pid, address _to, uint256 _amount) internal returns (uint256, uint256) {
+        PoolInfo memory pool = poolInfo[_pid];
+        UserInfo storage user = userInfo[_pid][_to];
+        uint256 taxAmount = 0;
+        uint256 rewardAmount = _amount;
+        if (block.timestamp-user.timestamp<pool.miniTaxFreeDay.mul(86400)) {
+            uint256 taxRatePercent = pool.maxTaxPercent.sub((block.timestamp-user.timestamp).mul(pool.maxTaxPercent).div(pool.miniTaxFreeDay.mul(86400)));
+            taxAmount = taxRatePercent.mul(_amount).div(100);
+            rewardAmount = _amount.sub(taxAmount);
+        }
+        sbfRewardVault.safeTransferSBF(_to, rewardAmount);
+        sbfRewardVault.safeTransferSBF(taxVault, taxAmount);
+        return (rewardAmount, taxAmount);
     }
 }

@@ -26,6 +26,8 @@ contract('SteakBank Contract', (accounts) => {
         await sbfInst.approve(FarmingCenter.address, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e10)), {from: accounts[0]});
         await farmingCenterInst.initPools(
             [30,40,30],
+            [0,40,30],
+            [90,90,90],
             {from: accounts[0]}
         );
 
@@ -82,9 +84,46 @@ contract('SteakBank Contract', (accounts) => {
         await time.increase(10);
         await farmingCenterInst.migrateSBFPoolAgeFarming(0, {from: ownerAcc});
         await farmingCenterInst.migrateSBFPoolAgeFarming(1, {from: ownerAcc});
+
+        try {
+            await farmingCenterInst.migrateSBFPoolAgeFarming(2, {from: ownerAcc});
+            assert.fail();
+        } catch (error) {
+            assert.ok(error.toString().includes("empty farming info"));
+        }
+
         await time.advanceBlock();
 
         player0FarmingSpeed = await farmingCenterInst.farmingSpeed(0, player0);
-        console.log(player0FarmingSpeed.toString())
+        assert.equal(player0FarmingSpeed, web3.utils.toBN(1e18).mul(web3.utils.toBN(40)).toString(), "wrong farmingSpeed");
+
+        const farmingPhase2Inst = await FarmingPhase2.deployed();
+        const farmingPhase3Inst = await FarmingPhase3.deployed();
+        const farmingPhase4Inst = await FarmingPhase4.deployed();
+
+        let lpSupply = await farmingPhase2Inst.lpSupply(0);
+        assert.equal(lpSupply, web3.utils.toBN(1e18).mul(web3.utils.toBN(20)).toString(), "wrong lpSupply");
+
+        await time.increase(30);
+        await farmingCenterInst.migrateSBFPoolAgeFarming(0, {from: ownerAcc});
+        await farmingCenterInst.migrateSBFPoolAgeFarming(1, {from: ownerAcc});
+        player0FarmingSpeed = await farmingCenterInst.farmingSpeed(0, player0);
+        assert.equal(player0FarmingSpeed, web3.utils.toBN(1e18).mul(web3.utils.toBN(70)).toString(), "wrong farmingSpeed");
+
+        await time.increase(30);
+        await farmingCenterInst.migrateSBFPoolAgeFarming(0, {from: ownerAcc});
+        await farmingCenterInst.migrateSBFPoolAgeFarming(1, {from: ownerAcc});
+        player0FarmingSpeed = await farmingCenterInst.farmingSpeed(0, player0);
+        assert.equal(player0FarmingSpeed, web3.utils.toBN(1e18).mul(web3.utils.toBN(100)).toString(), "wrong farmingSpeed");
+
+        const{userAddr,poolID,amount,timestamp,farmingPhaseAmount} = await farmingCenterInst.farmingInfoMap(0);
+        assert.equal(farmingPhaseAmount, "4", "wrong lpSupply");
+
+        lpSupply = await farmingPhase2Inst.lpSupply(0);
+        assert.equal(lpSupply, web3.utils.toBN(1e18).mul(web3.utils.toBN(20)).toString(), "wrong lpSupply");
+        lpSupply = await farmingPhase3Inst.lpSupply(0);
+        assert.equal(lpSupply, web3.utils.toBN(1e18).mul(web3.utils.toBN(20)).toString(), "wrong lpSupply");
+        lpSupply = await farmingPhase4Inst.lpSupply(0);
+        assert.equal(lpSupply, web3.utils.toBN(1e18).mul(web3.utils.toBN(20)).toString(), "wrong lpSupply");
     });
 });

@@ -22,9 +22,6 @@ contract FarmingCenter is Ownable {
     uint256 constant public POOL_ID_LP_LBNB_BNB = 1;
     uint256 constant public POOL_ID_LP_SBF_BUSD = 2;
 
-    uint256 constant public MAX_TAX_RATE_LP_LBNB_BNB_POOL = 40;
-    uint256 constant public MAX_TAX_RATE_LP_SBF_BUSD_POOL = 30;
-
     uint256 constant public THREE_MONTHS = 7776000; // 90 * 86400
     uint256 constant public ONE_DAY = 1; // 86400
 
@@ -36,8 +33,8 @@ contract FarmingCenter is Ownable {
     address public aSBF2BUSDLP;
 
     uint256 public farmingIdx;
-    mapping(uint256 => FarmingInfo) farmingInfoMap;
-    mapping(address => uint256[]) userToFarmingIDsMap;
+    mapping(uint256 => FarmingInfo) public farmingInfoMap;
+    mapping(address => uint256[]) public userToFarmingIDsMap;
 
     IBEP20 public sbf;
     IBEP20 public lpLBNB2BNB;
@@ -50,7 +47,6 @@ contract FarmingCenter is Ownable {
 
     uint256 public startBlock;
     uint256 public endBlock;
-    address public taxVault;
     uint256 public sbfRewardPerBlock;
 
     event Deposit(address indexed userInfo, uint256 indexed pid, uint256 amount, uint256 reward);
@@ -94,33 +90,33 @@ contract FarmingCenter is Ownable {
         farmingPhase3 = _farmingPhase3;
         farmingPhase4 = _farmingPhase4;
 
-        taxVault = _taxVault;
-
-        farmingPhase1.initialize(address(this), _sbf);
-        farmingPhase2.initialize(address(this), _sbf);
-        farmingPhase3.initialize(address(this), _sbf);
-        farmingPhase4.initialize(address(this), _sbf);
+        farmingPhase1.initialize(address(this), _sbf, _taxVault);
+        farmingPhase2.initialize(address(this), _sbf, _taxVault);
+        farmingPhase3.initialize(address(this), _sbf, _taxVault);
+        farmingPhase4.initialize(address(this), _sbf, _taxVault);
     }
 
-    function initPools(uint256[] calldata _allocPoints, bool _withUpdate) external onlyOwner {
+    function initPools(uint256[] calldata _allocPoints, uint256[] calldata _maxTaxPercents, uint256[] calldata _miniTaxFreeDays, bool _withUpdate) external onlyOwner {
         require(initialized, "farm is not initialized");
         require(!pool_initialized, "pool already initialized");
         pool_initialized = true;
 
-        farmingPhase1.addPool(_allocPoints[0], sbf, _withUpdate);
-        farmingPhase2.addPool(_allocPoints[0], sbf, _withUpdate);
-        farmingPhase3.addPool(_allocPoints[0], sbf, _withUpdate);
-        farmingPhase4.addPool(_allocPoints[0], sbf, _withUpdate);
+        require(_allocPoints.length==3&&_maxTaxPercents.length==3&&_miniTaxFreeDays.length==3, "wrong array length");
 
-        farmingPhase1.addPool(_allocPoints[1], lpLBNB2BNB, _withUpdate);
-        farmingPhase2.addPool(_allocPoints[1], lpLBNB2BNB, _withUpdate);
-        farmingPhase3.addPool(_allocPoints[1], lpLBNB2BNB, _withUpdate);
-        farmingPhase4.addPool(_allocPoints[1], lpLBNB2BNB, _withUpdate);
+        farmingPhase1.addPool(_allocPoints[0], sbf, _maxTaxPercents[0], _miniTaxFreeDays[0], _withUpdate);
+        farmingPhase2.addPool(_allocPoints[0], sbf, _maxTaxPercents[0], _miniTaxFreeDays[0], _withUpdate);
+        farmingPhase3.addPool(_allocPoints[0], sbf, _maxTaxPercents[0], _miniTaxFreeDays[0], _withUpdate);
+        farmingPhase4.addPool(_allocPoints[0], sbf, _maxTaxPercents[0], _miniTaxFreeDays[0], _withUpdate);
 
-        farmingPhase1.addPool(_allocPoints[2], lpSBF2BUSD, _withUpdate);
-        farmingPhase2.addPool(_allocPoints[2], lpSBF2BUSD, _withUpdate);
-        farmingPhase3.addPool(_allocPoints[2], lpSBF2BUSD, _withUpdate);
-        farmingPhase4.addPool(_allocPoints[2], lpSBF2BUSD, _withUpdate);
+        farmingPhase1.addPool(_allocPoints[1], lpLBNB2BNB, _maxTaxPercents[1], _miniTaxFreeDays[1], _withUpdate);
+        farmingPhase2.addPool(_allocPoints[1], lpLBNB2BNB, _maxTaxPercents[1], _miniTaxFreeDays[1], _withUpdate);
+        farmingPhase3.addPool(_allocPoints[1], lpLBNB2BNB, _maxTaxPercents[1], _miniTaxFreeDays[1], _withUpdate);
+        farmingPhase4.addPool(_allocPoints[1], lpLBNB2BNB, _maxTaxPercents[1], _miniTaxFreeDays[1], _withUpdate);
+
+        farmingPhase1.addPool(_allocPoints[2], lpSBF2BUSD, _maxTaxPercents[2], _miniTaxFreeDays[2], _withUpdate);
+        farmingPhase2.addPool(_allocPoints[2], lpSBF2BUSD, _maxTaxPercents[2], _miniTaxFreeDays[2], _withUpdate);
+        farmingPhase3.addPool(_allocPoints[2], lpSBF2BUSD, _maxTaxPercents[2], _miniTaxFreeDays[2], _withUpdate);
+        farmingPhase4.addPool(_allocPoints[2], lpSBF2BUSD, _maxTaxPercents[2], _miniTaxFreeDays[2], _withUpdate);
     }
 
     function startFarmingPeriod(uint256 _farmingPeriod, uint256 _startHeight, uint256 _sbfRewardPerBlock) public onlyOwner {
@@ -178,21 +174,31 @@ contract FarmingCenter is Ownable {
 
         uint256[] memory phaseAmountArray = new uint256[](4);
         for (uint256 idx=0;idx<farmingIdxsLength;idx++){
-            FarmingInfo memory farmingInfo = farmingInfoMap[farmingIdxsLength-1];
+            FarmingInfo memory farmingInfo = farmingInfoMap[farmingIdxs[farmingIdxsLength-1]];
             if (farmingInfo.poolID != _pid) {
                 continue;
             }
             phaseAmountArray[farmingInfo.farmingPhaseAmount-1] = phaseAmountArray[farmingInfo.farmingPhaseAmount-1].add(farmingInfo.amount);
         }
-        uint256 totalPhaseAmount = phaseAmountArray[0].mul(10).div(farmingPhase1.lpSupply(_pid));
-        if (farmingPhase2.lpSupply(_pid)!=0) {
-            totalPhaseAmount = totalPhaseAmount.add(phaseAmountArray[1].mul(30).div(farmingPhase2.lpSupply(_pid)));
-        }
-        if (farmingPhase3.lpSupply(_pid)!=0) {
-            totalPhaseAmount = totalPhaseAmount.add(phaseAmountArray[2].mul(30).div(farmingPhase3.lpSupply(_pid)));
-        }
+        uint256 totalPhaseAmount;
+        uint256 accumulatePhaseAmount = phaseAmountArray[3];
         if (farmingPhase4.lpSupply(_pid)!=0) {
-            totalPhaseAmount = totalPhaseAmount.add(phaseAmountArray[3].mul(30).div(farmingPhase4.lpSupply(_pid)));
+            totalPhaseAmount = totalPhaseAmount.add(accumulatePhaseAmount.mul(30).div(farmingPhase4.lpSupply(_pid)));
+        }
+
+        accumulatePhaseAmount = accumulatePhaseAmount.add(phaseAmountArray[2]);
+        if (farmingPhase3.lpSupply(_pid)!=0) {
+            totalPhaseAmount = totalPhaseAmount.add(accumulatePhaseAmount.mul(30).div(farmingPhase3.lpSupply(_pid)));
+        }
+
+        accumulatePhaseAmount = accumulatePhaseAmount.add(phaseAmountArray[1]);
+        if (farmingPhase2.lpSupply(_pid)!=0) {
+            totalPhaseAmount = totalPhaseAmount.add(accumulatePhaseAmount.mul(30).div(farmingPhase2.lpSupply(_pid)));
+        }
+
+        accumulatePhaseAmount = accumulatePhaseAmount.add(phaseAmountArray[0]);
+        if (farmingPhase1.lpSupply(_pid)!=0) {
+            totalPhaseAmount = totalPhaseAmount.add(accumulatePhaseAmount.mul(10).div(farmingPhase1.lpSupply(_pid)));
         }
 
         return totalPhaseAmount.mul(sbfRewardPerBlock).div(100);
@@ -298,7 +304,7 @@ contract FarmingCenter is Ownable {
         farmingPhase2.withdraw(POOL_ID_LP_LBNB_BNB, _amount, msg.sender);
         farmingPhase1.withdraw(POOL_ID_LP_LBNB_BNB, _amount, msg.sender);
 
-        deductTaxLpLBNB2BNB(msg.sender, _amount, farmingInfo.timestamp);
+        lpLBNB2BNB.safeTransfer(msg.sender, _amount);
 
         if (farmingInfo.amount == _amount) {
             uint256[] storage farmingIdxs = userToFarmingIDsMap[msg.sender];
@@ -315,20 +321,6 @@ contract FarmingCenter is Ownable {
             farmingInfo.amount = farmingInfo.amount.sub(_amount);
             farmingInfo.timestamp = block.timestamp;
         }
-    }
-
-    function deductTaxLpLBNB2BNB(address _to, uint256 _amount, uint256 _timestamp) internal returns (uint256, uint256) {
-        uint256 taxAmount = 0;
-        uint256 rewardAmount = _amount;
-        if (block.timestamp-_timestamp<THREE_MONTHS) {
-            uint256 taxRatePercent = MAX_TAX_RATE_LP_LBNB_BNB_POOL.sub((block.timestamp-_timestamp).mul(MAX_TAX_RATE_LP_LBNB_BNB_POOL).div(THREE_MONTHS));
-            taxAmount = taxRatePercent.mul(_amount).div(100);
-            rewardAmount = _amount.sub(taxAmount);
-        }
-        lpLBNB2BNB.safeTransfer(_to, rewardAmount);
-        lpLBNB2BNB.safeTransfer(taxVault, taxAmount);
-        emit WithdrawTax(address(lpLBNB2BNB), _to, taxAmount);
-        return (rewardAmount, taxAmount);
     }
 
     function batchWithdrawLBNB2BNBPool(uint256[] memory _farmingIdxs) public {
@@ -373,7 +365,7 @@ contract FarmingCenter is Ownable {
         farmingPhase2.withdraw(POOL_ID_LP_SBF_BUSD, _amount, msg.sender);
         farmingPhase1.withdraw(POOL_ID_LP_SBF_BUSD, _amount, msg.sender);
 
-        deductTaxLpSBF2BUSD(msg.sender, _amount, farmingInfo.timestamp);
+        lpSBF2BUSD.safeTransfer(msg.sender, _amount);
 
         if (farmingInfo.amount == _amount) {
             uint256[] storage farmingIdxs = userToFarmingIDsMap[msg.sender];
@@ -390,20 +382,6 @@ contract FarmingCenter is Ownable {
             farmingInfo.amount = farmingInfo.amount.sub(_amount);
             farmingInfo.timestamp = block.timestamp;
         }
-    }
-
-    function deductTaxLpSBF2BUSD(address _to, uint256 _amount, uint256 _timestamp) internal returns (uint256, uint256) {
-        uint256 taxAmount = 0;
-        uint256 rewardAmount = _amount;
-        if (block.timestamp-_timestamp<THREE_MONTHS) {
-            uint256 taxRatePercent = MAX_TAX_RATE_LP_SBF_BUSD_POOL.sub((block.timestamp-_timestamp).mul(MAX_TAX_RATE_LP_SBF_BUSD_POOL).div(THREE_MONTHS));
-            taxAmount = taxRatePercent.mul(_amount).div(100);
-            rewardAmount = _amount.sub(taxAmount);
-        }
-        lpSBF2BUSD.safeTransfer(_to, rewardAmount);
-        lpSBF2BUSD.safeTransfer(taxVault, taxAmount);
-        emit WithdrawTax(address(lpSBF2BUSD), _to, taxAmount);
-        return (rewardAmount, taxAmount);
     }
 
     function batchWithdrawSBF2BUSDPool(uint256[] memory _farmingIdxs) public {
@@ -445,17 +423,21 @@ contract FarmingCenter is Ownable {
 
     function migrateSBFPoolAgeFarming(uint256 _farmingIdx) public {
         bool needMigration = false;
-        FarmingInfo memory farmingInfo = farmingInfoMap[_farmingIdx];
-        if (block.timestamp-farmingInfo.timestamp>7*ONE_DAY) {
+        FarmingInfo storage farmingInfo = farmingInfoMap[_farmingIdx];
+        require(farmingInfo.userAddr!=address(0x0), "empty farming info");
+        if (block.timestamp-farmingInfo.timestamp>7*ONE_DAY&&farmingInfo.farmingPhaseAmount<2) {
             farmingPhase2.deposit(POOL_ID_SBF, farmingInfo.amount, farmingInfo.userAddr);
+            farmingInfo.farmingPhaseAmount = 2;
             needMigration = true;
         }
-        if (block.timestamp-farmingInfo.timestamp>30*ONE_DAY) {
+        if (block.timestamp-farmingInfo.timestamp>30*ONE_DAY&&farmingInfo.farmingPhaseAmount<3) {
             farmingPhase3.deposit(POOL_ID_SBF, farmingInfo.amount, farmingInfo.userAddr);
+            farmingInfo.farmingPhaseAmount = 3;
             needMigration = true;
         }
-        if (block.timestamp-farmingInfo.timestamp>60*ONE_DAY) {
+        if (block.timestamp-farmingInfo.timestamp>60*ONE_DAY&&farmingInfo.farmingPhaseAmount<4) {
             farmingPhase4.deposit(POOL_ID_SBF, farmingInfo.amount, farmingInfo.userAddr);
+            farmingInfo.farmingPhaseAmount = 4;
             needMigration = true;
         }
         require(needMigration, "no need to migration");
