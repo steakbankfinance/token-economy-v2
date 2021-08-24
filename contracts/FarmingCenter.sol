@@ -25,6 +25,7 @@ contract FarmingCenter is Ownable {
     uint256 constant public POOL_ID_LP_SBF_BUSD = 2;
 
     uint256 constant public THREE_MONTHS = 7776000; // 90 * 86400
+    //TODO change to 86400 for mainnet
     uint256 constant public ONE_DAY = 1; // 86400
 
     bool public initialized;

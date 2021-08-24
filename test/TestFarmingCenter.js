@@ -154,4 +154,70 @@ contract('SteakBank Contract', (accounts) => {
         await aSBFInst.approve(FarmingCenter.address, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e10)),{from: player0});
         await farmingCenterInst.batchWithdrawSBFPool([0,1],{from: player0});
     });
+    it('Test LBNB/BNB Pool Deposit and Withdraw', async () => {
+        const farmingCenterInst = await FarmingCenter.deployed();
+        const LBNB2BNBLPTokenInst = await LBNB2BNBLPToken.deployed();
+        const ownerAcc = accounts[0];
+        const player0 = accounts[2];
+        const player1 = accounts[3];
+        const player2 = accounts[4];
+
+        await LBNB2BNBLPTokenInst.transfer(player0, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e6)), {from: ownerAcc});
+        await LBNB2BNBLPTokenInst.transfer(player1, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e6)), {from: ownerAcc});
+        await LBNB2BNBLPTokenInst.transfer(player2, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e6)), {from: ownerAcc});
+
+        await LBNB2BNBLPTokenInst.approve(FarmingCenter.address, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e10)), {from: player0});
+        await LBNB2BNBLPTokenInst.approve(FarmingCenter.address, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e10)), {from: player1});
+        await LBNB2BNBLPTokenInst.approve(FarmingCenter.address, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e10)), {from: player2});
+
+        let farmingIdx0 = await farmingCenterInst.farmingIdx();
+        await farmingCenterInst.depositLBNB2BNBPool(web3.utils.toBN(1e18).mul(web3.utils.toBN(10)), {from: player0});
+
+        await time.advanceBlock();
+
+        let player0PendingSBF = await farmingCenterInst.pendingSBF(1, player0);
+        assert.equal(player0PendingSBF, web3.utils.toBN(1e18).mul(web3.utils.toBN(40)).toString(), "wrong player0PendingSBF");
+
+        let farmingIdx1 = await farmingCenterInst.farmingIdx();
+        await farmingCenterInst.depositLBNB2BNBPool(web3.utils.toBN(1e18).mul(web3.utils.toBN(10)), {from: player0});
+
+        await time.advanceBlock();
+
+        const aLBNB2BNBLPInst = await aLBNB2BNBLP.deployed();
+        await aLBNB2BNBLPInst.approve(FarmingCenter.address, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e10)),{from: player0});
+        await farmingCenterInst.batchWithdrawLBNB2BNBPool([farmingIdx0, farmingIdx1], {from: player0});
+    });
+    it('Test SBF/BUSD Pool Deposit and Withdraw', async () => {
+        const farmingCenterInst = await FarmingCenter.deployed();
+        const SBF2BUSDLPTokenInst = await SBF2BUSDLPToken.deployed();
+        const ownerAcc = accounts[0];
+        const player0 = accounts[2];
+        const player1 = accounts[3];
+        const player2 = accounts[4];
+
+        await SBF2BUSDLPTokenInst.transfer(player0, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e6)), {from: ownerAcc});
+        await SBF2BUSDLPTokenInst.transfer(player1, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e6)), {from: ownerAcc});
+        await SBF2BUSDLPTokenInst.transfer(player2, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e6)), {from: ownerAcc});
+
+        await SBF2BUSDLPTokenInst.approve(FarmingCenter.address, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e10)), {from: player0});
+        await SBF2BUSDLPTokenInst.approve(FarmingCenter.address, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e10)), {from: player1});
+        await SBF2BUSDLPTokenInst.approve(FarmingCenter.address, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e10)), {from: player2});
+
+        let farmingIdx0 = await farmingCenterInst.farmingIdx();
+        await farmingCenterInst.depositSBF2BUSDPool(web3.utils.toBN(1e18).mul(web3.utils.toBN(10)), {from: player0});
+
+        await time.advanceBlock();
+
+        let player0PendingSBF = await farmingCenterInst.pendingSBF(2, player0);
+        assert.equal(player0PendingSBF, web3.utils.toBN(1e18).mul(web3.utils.toBN(21)).toString(), "wrong player0PendingSBF");
+
+        let farmingIdx1 = await farmingCenterInst.farmingIdx();
+        await farmingCenterInst.depositSBF2BUSDPool(web3.utils.toBN(1e18).mul(web3.utils.toBN(10)), {from: player0});
+
+        await time.advanceBlock();
+
+        const aSBF2BUSDLPInst = await aSBF2BUSDLP.deployed();
+        await aSBF2BUSDLPInst.approve(FarmingCenter.address, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e10)),{from: player0});
+        await farmingCenterInst.batchWithdrawSBF2BUSDPool([farmingIdx0, farmingIdx1], {from: player0});
+    });
 });
