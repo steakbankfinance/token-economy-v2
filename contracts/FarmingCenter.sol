@@ -26,6 +26,7 @@ contract FarmingCenter is Ownable {
     uint256 constant public MAX_TAX_RATE_LP_SBF_BUSD_POOL = 30;
 
     uint256 constant public THREE_MONTHS = 7776000; // 90 * 86400
+    uint256 constant public ONE_DAY = 1; // 86400
 
     bool public initialized;
     bool public pool_initialized;
@@ -184,9 +185,15 @@ contract FarmingCenter is Ownable {
             phaseAmountArray[farmingInfo.farmingPhaseAmount-1] = phaseAmountArray[farmingInfo.farmingPhaseAmount-1].add(farmingInfo.amount);
         }
         uint256 totalPhaseAmount = phaseAmountArray[0].mul(10).div(farmingPhase1.lpSupply(_pid));
-        totalPhaseAmount = totalPhaseAmount.add(phaseAmountArray[1].mul(30).div(farmingPhase2.lpSupply(_pid)));
-        totalPhaseAmount = totalPhaseAmount.add(phaseAmountArray[2].mul(30).div(farmingPhase3.lpSupply(_pid)));
-        totalPhaseAmount = totalPhaseAmount.add(phaseAmountArray[3].mul(30).div(farmingPhase4.lpSupply(_pid)));
+        if (farmingPhase2.lpSupply(_pid)!=0) {
+            totalPhaseAmount = totalPhaseAmount.add(phaseAmountArray[1].mul(30).div(farmingPhase2.lpSupply(_pid)));
+        }
+        if (farmingPhase3.lpSupply(_pid)!=0) {
+            totalPhaseAmount = totalPhaseAmount.add(phaseAmountArray[2].mul(30).div(farmingPhase3.lpSupply(_pid)));
+        }
+        if (farmingPhase4.lpSupply(_pid)!=0) {
+            totalPhaseAmount = totalPhaseAmount.add(phaseAmountArray[3].mul(30).div(farmingPhase4.lpSupply(_pid)));
+        }
 
         return totalPhaseAmount.mul(sbfRewardPerBlock).div(100);
     }
@@ -439,15 +446,15 @@ contract FarmingCenter is Ownable {
     function migrateSBFPoolAgeFarming(uint256 _farmingIdx) public {
         bool needMigration = false;
         FarmingInfo memory farmingInfo = farmingInfoMap[_farmingIdx];
-        if (block.timestamp-farmingInfo.timestamp>7*86400) {
+        if (block.timestamp-farmingInfo.timestamp>7*ONE_DAY) {
             farmingPhase2.deposit(POOL_ID_SBF, farmingInfo.amount, farmingInfo.userAddr);
             needMigration = true;
         }
-        if (block.timestamp-farmingInfo.timestamp>30*86400) {
+        if (block.timestamp-farmingInfo.timestamp>30*ONE_DAY) {
             farmingPhase3.deposit(POOL_ID_SBF, farmingInfo.amount, farmingInfo.userAddr);
             needMigration = true;
         }
-        if (block.timestamp-farmingInfo.timestamp>60*86400) {
+        if (block.timestamp-farmingInfo.timestamp>60*ONE_DAY) {
             farmingPhase4.deposit(POOL_ID_SBF, farmingInfo.amount, farmingInfo.userAddr);
             needMigration = true;
         }

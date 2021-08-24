@@ -50,4 +50,41 @@ contract('SteakBank Contract', (accounts) => {
         const endBlock = await farmingPhase1Inst.endBlock();
         assert.equal(endBlock, "1100", "wrong endBlock");
     });
+    it('Test SBF Pool Deposit and Withdraw', async () => {
+        const farmingCenterInst = await FarmingCenter.deployed();
+        const sbfInst = await SBF.deployed();
+        const ownerAcc = accounts[0];
+        const player0 = accounts[2];
+        const player1 = accounts[3];
+        const player2 = accounts[4];
+
+        await sbfInst.transfer(player0, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e6)),{from: ownerAcc});
+        await sbfInst.transfer(player1, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e6)),{from: ownerAcc});
+        await sbfInst.transfer(player2, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e6)),{from: ownerAcc});
+
+        await sbfInst.approve(FarmingCenter.address, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e10)), {from: player0});
+        await sbfInst.approve(FarmingCenter.address, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e10)), {from: player1});
+        await sbfInst.approve(FarmingCenter.address, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e10)), {from: player2});
+
+        await farmingCenterInst.depositSBFPool(web3.utils.toBN(1e18).mul(web3.utils.toBN(10)), {from: player0});
+
+        await time.advanceBlockTo(100);
+
+        let player0FarmingSpeed = await farmingCenterInst.farmingSpeed(0, player0);
+        assert.equal(player0FarmingSpeed, web3.utils.toBN(1e18).mul(web3.utils.toBN(10)).toString(), "wrong farming speed");
+
+        await farmingCenterInst.depositSBFPool(web3.utils.toBN(1e18).mul(web3.utils.toBN(10)), {from: player0});
+        await time.advanceBlock();
+
+        player0FarmingSpeed = await farmingCenterInst.farmingSpeed(0, player0);
+        assert.equal(player0FarmingSpeed, web3.utils.toBN(1e18).mul(web3.utils.toBN(10)).toString(), "wrong farming speed");
+
+        await time.increase(10);
+        await farmingCenterInst.migrateSBFPoolAgeFarming(0, {from: ownerAcc});
+        await farmingCenterInst.migrateSBFPoolAgeFarming(1, {from: ownerAcc});
+        await time.advanceBlock();
+
+        player0FarmingSpeed = await farmingCenterInst.farmingSpeed(0, player0);
+        console.log(player0FarmingSpeed.toString())
+    });
 });
