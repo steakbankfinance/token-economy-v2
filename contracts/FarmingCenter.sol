@@ -1,10 +1,12 @@
 pragma solidity 0.6.12;
 
-import "./lib/SBFRewardVault.sol";
 import "./lib/Ownable.sol";
-
 import "./interface/IFarm.sol";
 import "./interface/IMintBurnToken.sol";
+
+import "@pancakeswap/pancake-swap-lib/contracts/math/SafeMath.sol";
+import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/IBEP20.sol";
+import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/SafeBEP20.sol";
 
 contract FarmingCenter is Ownable {
     using SafeMath for uint256;

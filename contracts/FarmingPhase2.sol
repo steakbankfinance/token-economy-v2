@@ -1,9 +1,11 @@
 pragma solidity 0.6.12;
 
-import "./lib/SBFRewardVault.sol";
 import "./lib/Ownable.sol";
-
 import "./interface/IFarm.sol";
+
+import "@pancakeswap/pancake-swap-lib/contracts/math/SafeMath.sol";
+import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/IBEP20.sol";
+import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/SafeBEP20.sol";
 
 contract FarmingPhase2 is Ownable, IFarm {
     using SafeMath for uint256;
@@ -29,7 +31,6 @@ contract FarmingPhase2 is Ownable, IFarm {
     bool public initialized;
 
     IBEP20 public sbf;
-    SBFRewardVault public sbfRewardVault;
 
     address public taxVault;
     uint256 public sbfPerBlock;
@@ -52,8 +53,6 @@ contract FarmingPhase2 is Ownable, IFarm {
         require(!initialized, "already initialized");
         initialized = true;
 
-        sbfRewardVault = new SBFRewardVault(_sbf, address(this));
-
         super.initializeOwner(_owner);
         sbf = _sbf;
         taxVault = _taxVault;
@@ -67,7 +66,7 @@ contract FarmingPhase2 is Ownable, IFarm {
         massUpdatePools();
 
         uint256 totalSBFAmount = farmingPeriod.mul(sbfRewardPerBlock);
-        sbf.safeTransferFrom(msg.sender, address(sbfRewardVault), totalSBFAmount);
+        sbf.safeTransferFrom(msg.sender, address(this), totalSBFAmount);
 
         sbfPerBlock = sbfRewardPerBlock;
         startBlock = startHeight;
@@ -210,7 +209,8 @@ contract FarmingPhase2 is Ownable, IFarm {
     }
 
     function redeemSBF(address recipient) override external onlyOwner {
-        sbfRewardVault.redeemSBF(recipient);
+        uint256 balance = sbf.balanceOf(address(this));
+        sbf.safeTransfer(msg.sender, balance);
     }
 
     function lpSupply(uint256 _pid) override external view returns (uint256) {
@@ -227,8 +227,8 @@ contract FarmingPhase2 is Ownable, IFarm {
             taxAmount = taxRatePercent.mul(_amount).div(100);
             rewardAmount = _amount.sub(taxAmount);
         }
-        sbfRewardVault.safeTransferSBF(_to, rewardAmount);
-        sbfRewardVault.safeTransferSBF(taxVault, taxAmount);
+        sbf.safeTransfer(_to, rewardAmount);
+        sbf.safeTransfer(taxVault, taxAmount);
         return (rewardAmount, taxAmount);
     }
 }
