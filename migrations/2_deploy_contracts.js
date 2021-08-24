@@ -1,7 +1,10 @@
 const SBF = artifacts.require("SBF");
 const SBF2BUSDLPToken = artifacts.require("SBF2BUSDLPToken");
 const LBNB2BNBLPToken = artifacts.require("LBNB2BNBLPToken");
+
 const aSBF = artifacts.require("aSBF");
+const aLBNB2BNBLP = artifacts.require("aLBNB2BNBLP");
+const aSBF2BUSDLP = artifacts.require("aSBF2BUSDLP");
 
 const FarmingPhase1 = artifacts.require("FarmingPhase1");
 const FarmingPhase2 = artifacts.require("FarmingPhase2");
@@ -23,12 +26,19 @@ module.exports = function (deployer, network, accounts) {
     await deployer.deploy(FarmingPhase4);
 
     await deployer.deploy(FarmingCenter);
+
     await deployer.deploy(aSBF, FarmingCenter.address);
+    await deployer.deploy(aLBNB2BNBLP, FarmingCenter.address);
+    await deployer.deploy(aSBF2BUSDLP, FarmingCenter.address);
 
     const farmingCenterInst = await FarmingCenter.deployed();
 
-    await farmingCenterInst.initialize(deployerAcc,
+    await farmingCenterInst.initialize(
+        deployerAcc,
         aSBF.address,
+        aLBNB2BNBLP.address,
+        aSBF2BUSDLP.address,
+
         SBF.address,
         LBNB2BNBLPToken.address,
         SBF2BUSDLPToken.address,
@@ -36,6 +46,7 @@ module.exports = function (deployer, network, accounts) {
         FarmingPhase2.address,
         FarmingPhase3.address,
         FarmingPhase4.address,
-        taxVault);
+        taxVault
+    );
   });
 };

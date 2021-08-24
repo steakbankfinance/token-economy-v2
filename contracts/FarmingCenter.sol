@@ -61,9 +61,11 @@ contract FarmingCenter is Ownable {
 
     function initialize(
         address _owner,
-        IBEP20 _sbf,
-
         address _aSBF,
+        address _aLBNB2BNBLP,
+        address _aSBF2BUSDLP,
+
+        IBEP20 _sbf,
         IBEP20 _lpLBNB2BNB,
         IBEP20 _lpSBF2BUSD,
 
@@ -79,6 +81,8 @@ contract FarmingCenter is Ownable {
         super.initializeOwner(_owner);
 
         aSBF = _aSBF;
+        aLBNB2BNBLP = _aLBNB2BNBLP;
+        aSBF2BUSDLP = _aSBF2BUSDLP;
 
         sbf = _sbf;
         lpLBNB2BNB = _lpLBNB2BNB;
