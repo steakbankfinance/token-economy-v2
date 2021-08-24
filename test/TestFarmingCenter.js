@@ -12,6 +12,7 @@ const FarmingCenter = artifacts.require("FarmingCenter");
 
 const Web3 = require('web3');
 const truffleAssert = require('truffle-assertions');
+const { expectRevert, time } = require('@openzeppelin/test-helpers');
 const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'));
 
 contract('SteakBank Contract', (accounts) => {
@@ -33,5 +34,27 @@ contract('SteakBank Contract', (accounts) => {
             web3.utils.toBN(100).mul(web3.utils.toBN(1e18)),
             {from: accounts[0]}
         );
+
+        const farmingPhase1Inst = await FarmingPhase1.deployed();
+
+        const poolLength = await farmingPhase1Inst.poolLength();
+        assert.equal(poolLength, "3", "wrong pool length");
+
+        const sbfAddr = await farmingPhase1Inst.sbf();
+        assert.equal(sbfAddr, SBF.address, "wrong sbf address");
+
+        const startBlock = await farmingPhase1Inst.startBlock();
+        assert.equal(startBlock, "100", "wrong startBlock");
+
+        const endBlock = await farmingPhase1Inst.endBlock();
+        assert.equal(endBlock, "1100", "wrong endBlock");
+
+        const{lpToken,allocPoint,lastRewardBlock,accSBFPerShare,maxTaxPercent,miniTaxFreeDay} = await farmingPhase1Inst.poolInfo("0");
+        console.log(lpToken);
+        console.log(allocPoint);
+        console.log(lastRewardBlock);
+        console.log(accSBFPerShare);
+        console.log(maxTaxPercent);
+        console.log(miniTaxFreeDay);
     });
 });
