@@ -178,12 +178,12 @@ contract FarmingCenter is Ownable {
     }
 
     function farmingSpeed(uint256 _pid, address _user) external view returns (uint256) {
-        uint256[] storage farmingIdxs = userToFarmingIDsMap[_user];
+        uint256[] memory farmingIdxs = userToFarmingIDsMap[_user];
         uint256 farmingIdxsLength = farmingIdxs.length;
 
         uint256[] memory phaseAmountArray = new uint256[](4);
         for (uint256 idx=0;idx<farmingIdxsLength;idx++){
-            FarmingInfo memory farmingInfo = farmingInfoMap[farmingIdxs[farmingIdxsLength-1]];
+            FarmingInfo memory farmingInfo = farmingInfoMap[farmingIdxs[idx]];
             if (farmingInfo.poolID != _pid) {
                 continue;
             }

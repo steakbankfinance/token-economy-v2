@@ -19,3 +19,4 @@ build
 flatten/*.sol
 coverage
 coverage.json
+.DS_Store
