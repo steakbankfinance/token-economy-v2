@@ -3,8 +3,6 @@ pragma solidity 0.6.12;
 import "./interface/IPancakeRouter02.sol";
 import "./lib/Ownable.sol";
 
-import "@pancakeswap/pancake-swap-lib/contracts/math/SafeMath.sol";
-import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/IBEP20.sol";
 import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/SafeBEP20.sol";
 
 contract CMCAirdrop is Ownable {
@@ -73,8 +71,8 @@ contract CMCAirdrop is Ownable {
 
         uint sbfAmountReturn = _sbfAmount.sub(sbfAmountBefore.sub(sbfAmountAfter)).add(sbfRewardAmount);
 
-        sbf.safeTransferFrom(address(this), address(msg.sender), sbfAmountReturn);
-        busd.safeTransferFrom(address(this), address(msg.sender), busd.balanceOf(address(this)));
+        sbf.safeTransfer(address(msg.sender), sbfAmountReturn);
+        busd.safeTransfer(address(msg.sender), busd.balanceOf(address(this)));
 
         emit ClaimedSBFReward(msg.sender, sbfRewardAmount);
     }
@@ -85,5 +83,10 @@ contract CMCAirdrop is Ownable {
 
     function setSBFRewardAmount(uint256 _sbfRewardAmount) onlyOwner() public {
         sbfRewardAmount = _sbfRewardAmount;
+    }
+
+    function redeemSBF() external onlyOwner {
+        uint256 balance = sbf.balanceOf(address(this));
+        sbf.safeTransfer(msg.sender, balance);
     }
 }
