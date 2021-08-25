@@ -134,6 +134,9 @@ contract FarmingCenter is Ownable {
 
         uint256 totalSBFAmount = _farmingPeriod.mul(_sbfRewardPerBlock);
         sbf.safeTransferFrom(msg.sender, address(this), totalSBFAmount);
+        /**
+        加一个withdraw的方法 ?
+         */
 
         sbf.approve(address(farmingPhase1), totalSBFAmount.mul(10).div(100));
         sbf.approve(address(farmingPhase2), totalSBFAmount.mul(30).div(100));
@@ -187,30 +190,28 @@ contract FarmingCenter is Ownable {
             if (farmingInfo.poolID != _pid) {
                 continue;
             }
-            phaseAmountArray[farmingInfo.farmingPhaseAmount-1] = phaseAmountArray[farmingInfo.farmingPhaseAmount-1].add(farmingInfo.amount);
+            for(uint256 phaseIdx=0;phaseIdx<farmingInfo.farmingPhaseAmount;phaseIdx++){
+                phaseAmountArray[phaseIdx] = phaseAmountArray[phaseIdx].add(farmingInfo.amount);
+            }
         }
         uint256 totalAllocPoints = poolAllocPoints[0].add(poolAllocPoints[1]).add(poolAllocPoints[2]);
         uint256 poolSBFRewardPerBlock = sbfRewardPerBlock.mul(poolAllocPoints[_pid]).div(totalAllocPoints);
 
         uint256 totalPhaseAmount;
-        uint256 accumulatePhaseAmount = phaseAmountArray[3];
         if (farmingPhase4.lpSupply(_pid)!=0) {
-            totalPhaseAmount = totalPhaseAmount.add(accumulatePhaseAmount.mul(30).mul(poolSBFRewardPerBlock).div(farmingPhase4.lpSupply(_pid)));
+            totalPhaseAmount = totalPhaseAmount.add(phaseAmountArray[3].mul(30).mul(poolSBFRewardPerBlock).div(farmingPhase4.lpSupply(_pid)));
         }
 
-        accumulatePhaseAmount = accumulatePhaseAmount.add(phaseAmountArray[2]);
         if (farmingPhase3.lpSupply(_pid)!=0) {
-            totalPhaseAmount = totalPhaseAmount.add(accumulatePhaseAmount.mul(30).mul(poolSBFRewardPerBlock).div(farmingPhase3.lpSupply(_pid)));
+            totalPhaseAmount = totalPhaseAmount.add(phaseAmountArray[2].mul(30).mul(poolSBFRewardPerBlock).div(farmingPhase3.lpSupply(_pid)));
         }
 
-        accumulatePhaseAmount = accumulatePhaseAmount.add(phaseAmountArray[1]);
         if (farmingPhase2.lpSupply(_pid)!=0) {
-            totalPhaseAmount = totalPhaseAmount.add(accumulatePhaseAmount.mul(30).mul(poolSBFRewardPerBlock).div(farmingPhase2.lpSupply(_pid)));
+            totalPhaseAmount = totalPhaseAmount.add(phaseAmountArray[1].mul(30).mul(poolSBFRewardPerBlock).div(farmingPhase2.lpSupply(_pid)));
         }
 
-        accumulatePhaseAmount = accumulatePhaseAmount.add(phaseAmountArray[0]);
         if (farmingPhase1.lpSupply(_pid)!=0) {
-            totalPhaseAmount = totalPhaseAmount.add(accumulatePhaseAmount.mul(10).mul(poolSBFRewardPerBlock).div(farmingPhase1.lpSupply(_pid)));
+            totalPhaseAmount = totalPhaseAmount.add(phaseAmountArray[0].mul(10).mul(poolSBFRewardPerBlock).div(farmingPhase1.lpSupply(_pid)));
         }
 
         return totalPhaseAmount.div(100);
@@ -238,6 +239,7 @@ contract FarmingCenter is Ownable {
     function withdrawSBFPool(uint256 _amount, uint256 _farmingIdx) public {
         FarmingInfo storage farmingInfo = farmingInfoMap[_farmingIdx];
         require(farmingInfo.userAddr==msg.sender, "can't withdraw other farming");
+        require(_amount>0, "withdraw amount must be positive");
         require(farmingInfo.amount>=_amount, "withdraw amount too much");
 
         IBEP20(aSBF).transferFrom(msg.sender, address(this), _amount);
@@ -373,6 +375,9 @@ contract FarmingCenter is Ownable {
         IBEP20(aSBF2BUSDLP).transferFrom(msg.sender, address(this), _amount);
         IMintBurnToken(aSBF2BUSDLP).burn(_amount);
 
+        /**
+        SBF2BUSD 没有 farmingPhase4 ?
+         */
         farmingPhase3.withdraw(POOL_ID_LP_SBF_BUSD, _amount, msg.sender);
         farmingPhase2.withdraw(POOL_ID_LP_SBF_BUSD, _amount, msg.sender);
         farmingPhase1.withdraw(POOL_ID_LP_SBF_BUSD, _amount, msg.sender);
@@ -404,6 +409,9 @@ contract FarmingCenter is Ownable {
     }
 
     function emergencyWithdrawSBF(uint256[] memory _farmingIdxs) public {
+        /**
+        更新 FarmingPhase 中的 lpSupplyMap
+         */
         for(uint256 idx=0;idx<_farmingIdxs.length;idx++){
             FarmingInfo memory farmingInfo = farmingInfoMap[_farmingIdxs[idx]];
             require(farmingInfo.userAddr==msg.sender, "can't withdraw other farming");
