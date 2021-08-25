@@ -436,11 +436,11 @@ contract FarmingCenter is Ownable {
         }
     }
 
-    function deleteUserFarmingIDs(uint256 _idxs) internal {
+    function deleteUserFarmingIDs(uint256 _idx) internal {
         uint256[] storage farmingIdxs = userToFarmingIDsMap[msg.sender];
         uint256 farmingIdxsLength = farmingIdxs.length;
         for (uint256 idx=0;idx<farmingIdxsLength;idx++){
-            if (farmingIdxs[idx]==_idxs) {
+            if (farmingIdxs[idx]==_idx) {
                 farmingIdxs[idx]=farmingIdxs[farmingIdxsLength-1];
                 break;
             }
