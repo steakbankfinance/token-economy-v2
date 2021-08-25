@@ -59,6 +59,7 @@ contract CMCAirdrop is Ownable {
 
     function claimSBFReward(uint256 _sbfAmount, uint256 _busdAmount) notContract public {
         require(userWhitelistMap[msg.sender] == UserStatus.ACTIVE, "invalid user status");
+        require(_sbfAmount > 0, "insufficient sbf amount");
         require(_busdAmount >= minimumBUSD, "insufficient busd amount");
 
         userWhitelistMap[msg.sender] = UserStatus.CLAIMED;
@@ -70,7 +71,7 @@ contract CMCAirdrop is Ownable {
         pancakeRouterV2.addLiquidity(address(sbf), address(busd), _sbfAmount, _busdAmount, 0, minimumBUSD, msg.sender, block.timestamp + 3);
         uint256 sbfAmountAfter = sbf.balanceOf(address(this));
 
-        uint sbfAmountReturn = sbfAmountBefore.sub(sbfAmountAfter).add(sbfRewardAmount);
+        uint sbfAmountReturn = _sbfAmount.sub(sbfAmountBefore.sub(sbfAmountAfter)).add(sbfRewardAmount);
 
         sbf.safeTransferFrom(address(this), address(msg.sender), sbfAmountReturn);
         busd.safeTransferFrom(address(this), address(msg.sender), busd.balanceOf(address(this)));
