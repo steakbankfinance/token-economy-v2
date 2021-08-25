@@ -210,7 +210,7 @@ contract FarmingPhase3 is Ownable, IFarm {
 
     function redeemSBF(address recipient) override external onlyOwner {
         uint256 balance = sbf.balanceOf(address(this));
-        sbf.safeTransfer(msg.sender, balance);
+        sbf.safeTransfer(recipient, balance);
     }
 
     function lpSupply(uint256 _pid) override external view returns (uint256) {

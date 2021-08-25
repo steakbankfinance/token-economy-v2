@@ -162,12 +162,12 @@ contract FarmingCenter is Ownable {
         farmingPhase4.set(_pid, _allocPoints, _withUpdate);
     }
 
-    function redeemSBF(address recipient) public onlyOwner {
+    function redeemSBF() public onlyOwner {
         require(block.number>=endBlock, "farming is not end");
-        farmingPhase1.redeemSBF(recipient);
-        farmingPhase2.redeemSBF(recipient);
-        farmingPhase3.redeemSBF(recipient);
-        farmingPhase4.redeemSBF(recipient);
+        farmingPhase1.redeemSBF(msg.sender);
+        farmingPhase2.redeemSBF(msg.sender);
+        farmingPhase3.redeemSBF(msg.sender);
+        farmingPhase4.redeemSBF(msg.sender);
     }
 
     function pendingSBF(uint256 _pid, address _user) external view returns (uint256) {
