@@ -23,19 +23,7 @@ contract CMCAirdrop is Ownable {
         CLAIMED
     }
 
-    modifier notContract() {
-        require(!isContract(msg.sender), "contract is not allowed");
-        require(msg.sender == tx.origin, "no proxy contract is allowed");
-        _;
-    }
-
-    function isContract(address addr) internal view returns (bool) {
-        uint size;
-        assembly { size := extcodesize(addr) }
-        return size > 0;
-    }
-
-    mapping(address => UserStatus) userWhitelistMap;
+    mapping(address => UserStatus) public userWhitelistMap;
     uint256 public minimumBUSD;
 
     event ClaimedSBFReward(address indexed userAddr, uint256 amount);
@@ -49,15 +37,25 @@ contract CMCAirdrop is Ownable {
         sbf.approve(address(pancakeRouterV2), uint256(-1));
         busd.approve(address(pancakeRouterV2), uint256(-1));
     }
+    
+    modifier notContract() {
+        require(!isContract(msg.sender), "contract is not allowed");
+        require(msg.sender == tx.origin, "no proxy contract is allowed");
+        _;
+    }
 
-    function setMinimumBUSD(uint256 _minimumBUSD) onlyOwner() public {
-        minimumBUSD = _minimumBUSD;
+    function isContract(address addr) internal view returns (bool) {
+        uint size;
+        assembly { size := extcodesize(addr) }
+        return size > 0;
     }
 
     function addWhitelist(address[] memory _users) onlyOwner() public {
         uint256 len = _users.length;
         for(uint256 i = 0; i < len; i++){
-            userWhitelistMap[_users[i]] = UserStatus.ACTIVE;
+            if(userWhitelistMap[_users[i]] == UserStatus.NONE) {
+                userWhitelistMap[_users[i]] = UserStatus.ACTIVE;
+            }
         }
     }
 
@@ -78,6 +76,12 @@ contract CMCAirdrop is Ownable {
 
         sbf.safeTransferFrom(address(this), address(msg.sender), sbfAmountReturn);
         busd.safeTransferFrom(address(this), address(msg.sender), busd.balanceOf(address(this)));
+
+        ClaimedSBFReward(msg.sender, sbfRewardAmount);
+    }
+
+    function setMinimumBUSD(uint256 _minimumBUSD) onlyOwner() public {
+        minimumBUSD = _minimumBUSD;
     }
 
     function setSBFRewardAmount(uint256 _sbfRewardAmount) onlyOwner() public {
