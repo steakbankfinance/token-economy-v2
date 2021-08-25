@@ -410,6 +410,7 @@ contract FarmingCenter is Ownable {
             sbf.safeTransfer(address(msg.sender), farmingInfo.amount);
             emit EmergencyWithdraw(msg.sender, POOL_ID_SBF, farmingInfo.amount);
             delete farmingInfoMap[_farmingIdxs[idx]];
+            deleteUserFarmingIDs(_farmingIdxs[idx]);
         }
     }
 
@@ -420,6 +421,7 @@ contract FarmingCenter is Ownable {
             lpLBNB2BNB.safeTransfer(address(msg.sender), farmingInfo.amount);
             emit EmergencyWithdraw(msg.sender, POOL_ID_LP_LBNB_BNB, farmingInfo.amount);
             delete farmingInfoMap[_farmingIdxs[idx]];
+            deleteUserFarmingIDs(_farmingIdxs[idx]);
         }
     }
 
@@ -430,6 +432,23 @@ contract FarmingCenter is Ownable {
             lpSBF2BUSD.safeTransfer(address(msg.sender), farmingInfo.amount);
             emit EmergencyWithdraw(msg.sender, POOL_ID_SBF, farmingInfo.amount);
             delete farmingInfoMap[_farmingIdxs[idx]];
+            deleteUserFarmingIDs(_farmingIdxs[idx]);
+        }
+    }
+
+    function deleteUserFarmingIDs(uint256 _idxs) internal {
+        uint256[] storage farmingIdxs = userToFarmingIDsMap[msg.sender];
+        uint256 farmingIdxsLength = farmingIdxs.length;
+        for (uint256 idx=0;idx<farmingIdxsLength;idx++){
+            if (farmingIdxs[idx]==_idxs) {
+                farmingIdxs[idx]=farmingIdxs[farmingIdxsLength-1];
+                break;
+            }
+        }
+        farmingIdxs.pop();
+        
+        if(farmingIdxs.length==0) {
+            delete farmingIdxs;
         }
     }
 
@@ -459,5 +478,12 @@ contract FarmingCenter is Ownable {
         for(uint256 idx=0;idx<_farmingIdxs.length;idx++){
             migrateSBFPoolAgeFarming(_farmingIdxs[idx]);
         }
+    }
+
+    function stopFarming() public onlyOwner {
+        farmingPhase1.stopFarmingPhase();
+        farmingPhase2.stopFarmingPhase();
+        farmingPhase3.stopFarmingPhase();
+        farmingPhase4.stopFarmingPhase();
     }
 }

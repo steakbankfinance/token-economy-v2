@@ -231,4 +231,9 @@ contract FarmingPhase4 is Ownable, IFarm {
         sbf.safeTransfer(taxVault, taxAmount);
         return (rewardAmount, taxAmount);
     }
+    
+    function stopFarmingPhase() external onlyOwner {
+        massUpdatePools();
+        sbfPerBlock = 0;
+    }
 }
