@@ -232,7 +232,7 @@ contract FarmingPhase2 is Ownable, IFarm {
         return (rewardAmount, taxAmount);
     }
     
-    function stopFarmingPhase() external onlyOwner {
+    function stopFarmingPhase() override external onlyOwner {
         massUpdatePools();
         sbfPerBlock = 0;
     }

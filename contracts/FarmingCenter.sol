@@ -446,10 +446,6 @@ contract FarmingCenter is Ownable {
             }
         }
         farmingIdxs.pop();
-        
-        if(farmingIdxs.length==0) {
-            delete farmingIdxs;
-        }
     }
 
     function migrateSBFPoolAgeFarming(uint256 _farmingIdx) public {

@@ -14,4 +14,6 @@ interface IFarm {
 
     function pendingSBF(uint256 _pid, address _user) external view returns (uint256);
     function lpSupply(uint256 _pid) external view returns (uint256);
+
+    function stopFarmingPhase() external;
 }
