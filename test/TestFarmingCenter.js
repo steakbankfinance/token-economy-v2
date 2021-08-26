@@ -218,6 +218,11 @@ contract('SteakBank Contract', (accounts) => {
 
         await time.advanceBlock();
 
+        await time.increase(61);
+        await farmingCenterInst.batchMigrateSBF2BUSDPoolAgeFarming([farmingIdx0, farmingIdx1], {from: player0});
+
+        await time.advanceBlock();
+
         const aSBF2BUSDLPInst = await aSBF2BUSDLP.deployed();
         await aSBF2BUSDLPInst.approve(FarmingCenter.address, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e10)),{from: player0});
         await farmingCenterInst.batchWithdrawSBF2BUSDPool([farmingIdx0, farmingIdx1], {from: player0});

@@ -489,6 +489,12 @@ contract FarmingCenter is Ownable {
         require(needMigration, "no need to migration");
     }
 
+    function batchMigrateSBFPoolAgeFarming(uint256[] memory _farmingIdxs) public {
+        for(uint256 idx=0;idx<_farmingIdxs.length;idx++){
+            migrateSBFPoolAgeFarming(_farmingIdxs[idx]);
+        }
+    }
+
     function migrateSBF2BUSDPoolAgeFarming(uint256 _farmingIdx) public {
         bool needMigration = false;
         FarmingInfo storage farmingInfo = farmingInfoMap[_farmingIdx];
@@ -502,9 +508,9 @@ contract FarmingCenter is Ownable {
         require(needMigration, "no need to migration");
     }
 
-    function batchMigrateSBFPoolAgeFarming(uint256[] memory _farmingIdxs) public {
+    function batchMigrateSBF2BUSDPoolAgeFarming(uint256[] memory _farmingIdxs) public {
         for(uint256 idx=0;idx<_farmingIdxs.length;idx++){
-            migrateSBFPoolAgeFarming(_farmingIdxs[idx]);
+            migrateSBF2BUSDPoolAgeFarming(_farmingIdxs[idx]);
         }
     }
 
