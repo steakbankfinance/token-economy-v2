@@ -380,6 +380,9 @@ contract FarmingCenter is Ownable {
         IBEP20(aSBF2BUSDLP).transferFrom(msg.sender, address(this), _amount);
         IMintBurnToken(aSBF2BUSDLP).burn(_amount);
 
+        if (farmingInfo.farmingPhaseAmount >= 4) {
+            farmingPhase4.withdraw(POOL_ID_LP_SBF_BUSD, _amount, msg.sender);
+        }
         farmingPhase3.withdraw(POOL_ID_LP_SBF_BUSD, _amount, msg.sender);
         farmingPhase2.withdraw(POOL_ID_LP_SBF_BUSD, _amount, msg.sender);
         farmingPhase1.withdraw(POOL_ID_LP_SBF_BUSD, _amount, msg.sender);
