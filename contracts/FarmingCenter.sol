@@ -382,7 +382,7 @@ contract FarmingCenter is Ownable {
         IMintBurnToken(aSBF2BUSDLP).burn(_amount);
 
         if (farmingInfo.farmingPhaseAmount >= 4) {
-            farmingPhase4.withdraw(POOL_ID_LP_SBF_BUSD, _amount, msg.sender);
+            farmingPhase4.withdraw(POOL_ID_LP_SBF_BUSD, farmingInfo.amount, msg.sender);
         }
         farmingPhase3.withdraw(POOL_ID_LP_SBF_BUSD, _amount, msg.sender);
         farmingPhase2.withdraw(POOL_ID_LP_SBF_BUSD, _amount, msg.sender);
