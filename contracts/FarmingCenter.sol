@@ -102,7 +102,7 @@ contract FarmingCenter is Ownable {
 
     function initPools(uint256[] calldata _allocPoints, uint256[] calldata _maxTaxPercents, uint256[] calldata _miniTaxFreeDays, bool _withUpdate) external onlyOwner {
         require(initialized, "farm is not initialized");
-        require(!pool_initialized, "pool already initialized");
+        require(!pool_initialized, "farms are already initialized");
         pool_initialized = true;
 
         require(_allocPoints.length==3&&_maxTaxPercents.length==3&&_miniTaxFreeDays.length==3, "wrong array length");
@@ -127,7 +127,7 @@ contract FarmingCenter is Ownable {
     }
 
     function startFarmingPeriod(uint256 _farmingPeriod, uint256 _startHeight, uint256 _sbfRewardPerBlock) public onlyOwner {
-        require(pool_initialized, "pool is not initialized");
+        require(pool_initialized, "farm pools are not initialized");
 
         startBlock = _startHeight;
         endBlock = _startHeight.add(_farmingPeriod);
@@ -469,6 +469,7 @@ contract FarmingCenter is Ownable {
     function migrateSBFPoolAgeFarming(uint256 _farmingIdx) public {
         bool needMigration = false;
         FarmingInfo storage farmingInfo = farmingInfoMap[_farmingIdx];
+        require(farmingInfo.poolID==POOL_ID_SBF, "pool id mismatch");
         require(farmingInfo.userAddr!=address(0x0), "empty farming info");
         if (block.timestamp-farmingInfo.timestamp>7*ONE_DAY&&farmingInfo.farmingPhaseAmount<2) {
             farmingPhase2.deposit(POOL_ID_SBF, farmingInfo.amount, farmingInfo.userAddr);
@@ -482,6 +483,19 @@ contract FarmingCenter is Ownable {
         }
         if (block.timestamp-farmingInfo.timestamp>60*ONE_DAY&&farmingInfo.farmingPhaseAmount<4) {
             farmingPhase4.deposit(POOL_ID_SBF, farmingInfo.amount, farmingInfo.userAddr);
+            farmingInfo.farmingPhaseAmount = 4;
+            needMigration = true;
+        }
+        require(needMigration, "no need to migration");
+    }
+
+    function migrateSBF2BUSDPoolAgeFarming(uint256 _farmingIdx) public {
+        bool needMigration = false;
+        FarmingInfo storage farmingInfo = farmingInfoMap[_farmingIdx];
+        require(farmingInfo.poolID==POOL_ID_LP_SBF_BUSD, "pool id mismatch");
+        require(farmingInfo.userAddr!=address(0x0), "empty farming info");
+        if (block.timestamp-farmingInfo.timestamp>60*ONE_DAY&&farmingInfo.farmingPhaseAmount<4) {
+            farmingPhase4.deposit(POOL_ID_LP_SBF_BUSD, farmingInfo.amount, farmingInfo.userAddr);
             farmingInfo.farmingPhaseAmount = 4;
             needMigration = true;
         }
