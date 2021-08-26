@@ -241,8 +241,8 @@ contract FarmingCenter is Ownable {
 
     function withdrawSBFPool(uint256 _amount, uint256 _farmingIdx) public {
         FarmingInfo storage farmingInfo = farmingInfoMap[_farmingIdx];
-        require(farmingInfo.poolID==POOL_ID_SBF, "pool id mismatch");
         require(farmingInfo.userAddr==msg.sender, "can't withdraw other farming");
+        require(farmingInfo.poolID==POOL_ID_SBF, "pool id mismatch");
         require(farmingInfo.amount>=_amount, "withdraw amount too much");
 
         IBEP20(aSBF).transferFrom(msg.sender, address(this), _amount);
@@ -309,8 +309,8 @@ contract FarmingCenter is Ownable {
 
     function withdrawLBNB2BNBPool(uint256 _amount, uint256 _farmingIdx) public {
         FarmingInfo storage farmingInfo = farmingInfoMap[_farmingIdx];
-        require(farmingInfo.poolID==POOL_ID_LP_LBNB_BNB, "pool id mismatch");
         require(farmingInfo.userAddr==msg.sender, "can't withdraw other farming");
+        require(farmingInfo.poolID==POOL_ID_LP_LBNB_BNB, "pool id mismatch");
         require(_amount>0, "withdraw amount must be positive");
         require(farmingInfo.amount>=_amount, "withdraw amount too much");
         
@@ -372,8 +372,8 @@ contract FarmingCenter is Ownable {
 
     function withdrawSBF2BUSDPool(uint256 _amount, uint256 _farmingIdx) public {
         FarmingInfo storage farmingInfo = farmingInfoMap[_farmingIdx];
-        require(farmingInfo.poolID==POOL_ID_LP_SBF_BUSD, "pool id mismatch");
         require(farmingInfo.userAddr==msg.sender, "can't withdraw other farming");
+        require(farmingInfo.poolID==POOL_ID_LP_SBF_BUSD, "pool id mismatch");
         require(_amount>0, "withdraw amount must be positive");
         require(farmingInfo.amount>=_amount, "withdraw amount too much");
 
@@ -424,8 +424,8 @@ contract FarmingCenter is Ownable {
     function emergencyWithdrawSBF(uint256[] memory _farmingIdxs) public {
         for(uint256 idx=0;idx<_farmingIdxs.length;idx++){
             FarmingInfo memory farmingInfo = farmingInfoMap[_farmingIdxs[idx]];
-            require(farmingInfo.poolID==POOL_ID_SBF, "wrong pool id");
             require(farmingInfo.userAddr==msg.sender, "can't withdraw other farming");
+            require(farmingInfo.poolID==POOL_ID_SBF, "pool id mismatch");
             sbf.safeTransfer(address(msg.sender), farmingInfo.amount);
             emit EmergencyWithdraw(msg.sender, POOL_ID_SBF, farmingInfo.amount);
             delete farmingInfoMap[_farmingIdxs[idx]];
@@ -436,8 +436,8 @@ contract FarmingCenter is Ownable {
     function emergencyWithdrawLBNB2BNBLP(uint256[] memory _farmingIdxs) public {
         for(uint256 idx=0;idx<_farmingIdxs.length;idx++){
             FarmingInfo memory farmingInfo = farmingInfoMap[_farmingIdxs[idx]];
-            require(farmingInfo.poolID==POOL_ID_LP_LBNB_BNB, "wrong pool id");
             require(farmingInfo.userAddr==msg.sender, "can't withdraw other farming");
+            require(farmingInfo.poolID==POOL_ID_LP_LBNB_BNB, "pool id mismatch");
             lpLBNB2BNB.safeTransfer(address(msg.sender), farmingInfo.amount);
             emit EmergencyWithdraw(msg.sender, POOL_ID_LP_LBNB_BNB, farmingInfo.amount);
             delete farmingInfoMap[_farmingIdxs[idx]];
@@ -448,8 +448,8 @@ contract FarmingCenter is Ownable {
     function emergencyWithdrawSBF2BUSDLP(uint256[] memory _farmingIdxs) public {
         for(uint256 idx=0;idx<_farmingIdxs.length;idx++){
             FarmingInfo memory farmingInfo = farmingInfoMap[_farmingIdxs[idx]];
-            require(farmingInfo.poolID==POOL_ID_LP_SBF_BUSD, "wrong pool id");
             require(farmingInfo.userAddr==msg.sender, "can't withdraw other farming");
+            require(farmingInfo.poolID==POOL_ID_LP_SBF_BUSD, "pool id mismatch");
             lpSBF2BUSD.safeTransfer(address(msg.sender), farmingInfo.amount);
             emit EmergencyWithdraw(msg.sender, POOL_ID_LP_SBF_BUSD, farmingInfo.amount);
             delete farmingInfoMap[_farmingIdxs[idx]];
@@ -472,8 +472,8 @@ contract FarmingCenter is Ownable {
     function migrateSBFPoolAgeFarming(uint256 _farmingIdx) public {
         bool needMigration = false;
         FarmingInfo storage farmingInfo = farmingInfoMap[_farmingIdx];
-        require(farmingInfo.poolID==POOL_ID_SBF, "pool id mismatch");
         require(farmingInfo.userAddr!=address(0x0), "empty farming info");
+        require(farmingInfo.poolID==POOL_ID_SBF, "pool id mismatch");
         if (block.timestamp-farmingInfo.timestamp>7*ONE_DAY&&farmingInfo.farmingPhaseAmount<2) {
             farmingPhase2.deposit(POOL_ID_SBF, farmingInfo.amount, farmingInfo.userAddr);
             farmingInfo.farmingPhaseAmount = 2;
@@ -501,8 +501,8 @@ contract FarmingCenter is Ownable {
     function migrateSBF2BUSDPoolAgeFarming(uint256 _farmingIdx) public {
         bool needMigration = false;
         FarmingInfo storage farmingInfo = farmingInfoMap[_farmingIdx];
-        require(farmingInfo.poolID==POOL_ID_LP_SBF_BUSD, "pool id mismatch");
         require(farmingInfo.userAddr!=address(0x0), "empty farming info");
+        require(farmingInfo.poolID==POOL_ID_LP_SBF_BUSD, "pool id mismatch");
         if (block.timestamp-farmingInfo.timestamp>60*ONE_DAY&&farmingInfo.farmingPhaseAmount<4) {
             farmingPhase4.deposit(POOL_ID_LP_SBF_BUSD, farmingInfo.amount, farmingInfo.userAddr);
             farmingInfo.farmingPhaseAmount = 4;
