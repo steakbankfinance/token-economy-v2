@@ -272,6 +272,7 @@ contract FarmingCenter is Ownable {
             delete farmingInfoMap[_farmingIdx];
         } else {
             farmingInfo.amount = farmingInfo.amount.sub(_amount);
+            farmingInfo.farmingPhaseAmount = 1;
             farmingInfo.timestamp = block.timestamp;
         }
         sbf.safeTransfer(address(msg.sender), _amount);
@@ -402,6 +403,7 @@ contract FarmingCenter is Ownable {
             delete farmingInfoMap[_farmingIdx];
         } else {
             farmingInfo.amount = farmingInfo.amount.sub(_amount);
+            farmingInfo.farmingPhaseAmount = 3;
             farmingInfo.timestamp = block.timestamp;
         }
     }
