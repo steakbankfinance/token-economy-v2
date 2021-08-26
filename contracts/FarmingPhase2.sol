@@ -11,9 +11,10 @@ contract FarmingPhase2 is Ownable, IFarm {
     using SafeMath for uint256;
     using SafeBEP20 for IBEP20;
 
+    uint256 constant public BLOCKS_PER_DAY = 28800;
+
     struct UserInfo {
         uint256 amount;
-        uint256 timestamp;
         uint256 rewardDebt;
     }
 
@@ -180,7 +181,6 @@ contract FarmingPhase2 is Ownable, IFarm {
             user.amount = user.amount.add(_amount);
         }
         user.rewardDebt = user.amount.mul(pool.accSBFPerShare).div(REWARD_CALCULATE_PRECISION);
-        user.timestamp = block.timestamp;
         lpSupplyMap[_pid] = lpSupplyMap[_pid].add(_amount);
         emit Deposit(_userAddr, _pid, _amount, reward, taxAmount);
     }
@@ -203,7 +203,6 @@ contract FarmingPhase2 is Ownable, IFarm {
             user.amount = user.amount.sub(_amount);
         }
         user.rewardDebt = user.amount.mul(pool.accSBFPerShare).div(REWARD_CALCULATE_PRECISION);
-        user.timestamp = block.timestamp;
         lpSupplyMap[_pid] = lpSupplyMap[_pid].sub(_amount);
         emit Withdraw(_userAddr, _pid, _amount, reward, taxAmount);
     }
@@ -222,8 +221,8 @@ contract FarmingPhase2 is Ownable, IFarm {
         UserInfo storage user = userInfo[_pid][_to];
         uint256 taxAmount = 0;
         uint256 rewardAmount = _amount;
-        if (block.timestamp-user.timestamp<pool.miniTaxFreeDay.mul(86400)) {
-            uint256 taxRatePercent = pool.maxTaxPercent.sub((block.timestamp-user.timestamp).mul(pool.maxTaxPercent).div(pool.miniTaxFreeDay.mul(86400)));
+        if (block.number-startBlock<pool.miniTaxFreeDay.mul(BLOCKS_PER_DAY)) {
+            uint256 taxRatePercent = pool.maxTaxPercent.sub((block.number-startBlock).mul(pool.maxTaxPercent).div(pool.miniTaxFreeDay.mul(BLOCKS_PER_DAY)));
             taxAmount = taxRatePercent.mul(_amount).div(100);
             rewardAmount = _amount.sub(taxAmount);
         }
@@ -231,7 +230,7 @@ contract FarmingPhase2 is Ownable, IFarm {
         sbf.safeTransfer(taxVault, taxAmount);
         return (rewardAmount, taxAmount);
     }
-    
+
     function stopFarmingPhase() override external onlyOwner {
         massUpdatePools();
         sbfPerBlock = 0;
