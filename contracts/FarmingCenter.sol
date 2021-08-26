@@ -1,4 +1,5 @@
 pragma solidity 0.6.12;
+//pragma experimental ABIEncoderV2;
 
 import "./lib/Ownable.sol";
 import "./interface/IFarm.sol";
@@ -24,7 +25,6 @@ contract FarmingCenter is Ownable {
     uint256 constant public POOL_ID_LP_LBNB_BNB = 1;
     uint256 constant public POOL_ID_LP_SBF_BUSD = 2;
 
-    uint256 constant public THREE_MONTHS = 7776000; // 90 * 86400
     //TODO change to 86400 for mainnet
     uint256 constant public ONE_DAY = 1; // 86400
 
@@ -37,7 +37,7 @@ contract FarmingCenter is Ownable {
 
     uint256 public farmingIdx;
     mapping(uint256 => FarmingInfo) public farmingInfoMap;
-    mapping(address => uint256[]) public userToFarmingIDsMap;
+    mapping(address => mapping(uint256 => uint256[])) public userToFarmingIDsMap;
     mapping(uint256 => uint256) public poolAllocPoints;
 
     IBEP20 public sbf;
@@ -177,8 +177,12 @@ contract FarmingCenter is Ownable {
         add(farmingPhase4.pendingSBF(_pid, _user));
     }
 
+    function getUserFarmingIdxs(uint256 _pid, address _user) external view returns(uint256[] memory) {
+        return userToFarmingIDsMap[_user][_pid];
+    }
+
     function farmingSpeed(uint256 _pid, address _user) external view returns (uint256) {
-        uint256[] memory farmingIdxs = userToFarmingIDsMap[_user];
+        uint256[] memory farmingIdxs = userToFarmingIDsMap[_user][_pid];
         uint256 farmingIdxsLength = farmingIdxs.length;
 
         uint256[] memory phaseAmountArray = new uint256[](4);
@@ -225,7 +229,7 @@ contract FarmingCenter is Ownable {
                 timestamp: block.timestamp,
                 farmingPhaseAmount: 1
             });
-            userToFarmingIDsMap[msg.sender].push(farmingIdx);
+            userToFarmingIDsMap[msg.sender][POOL_ID_SBF].push(farmingIdx);
             farmingIdx++;
         }
 
@@ -237,6 +241,7 @@ contract FarmingCenter is Ownable {
 
     function withdrawSBFPool(uint256 _amount, uint256 _farmingIdx) public {
         FarmingInfo storage farmingInfo = farmingInfoMap[_farmingIdx];
+        require(farmingInfo.poolID==POOL_ID_SBF, "pool id mismatch");
         require(farmingInfo.userAddr==msg.sender, "can't withdraw other farming");
         require(farmingInfo.amount>=_amount, "withdraw amount too much");
 
@@ -255,7 +260,7 @@ contract FarmingCenter is Ownable {
         farmingPhase1.withdraw(POOL_ID_SBF, _amount, farmingInfo.userAddr);
 
         if (farmingInfo.amount == _amount) {
-            uint256[] storage farmingIdxs = userToFarmingIDsMap[msg.sender];
+            uint256[] storage farmingIdxs = userToFarmingIDsMap[msg.sender][POOL_ID_SBF];
             uint256 farmingIdxsLength = farmingIdxs.length;
             for (uint256 idx=0;idx<farmingIdxsLength;idx++){
                 if (farmingIdxs[idx]==_farmingIdx) {
@@ -288,7 +293,7 @@ contract FarmingCenter is Ownable {
                 timestamp: block.timestamp,
                 farmingPhaseAmount: 4
             });
-            userToFarmingIDsMap[msg.sender].push(farmingIdx);
+            userToFarmingIDsMap[msg.sender][POOL_ID_LP_LBNB_BNB].push(farmingIdx);
             farmingIdx++;
 
             lpLBNB2BNB.safeTransferFrom(address(msg.sender), address(this), _amount);
@@ -304,6 +309,7 @@ contract FarmingCenter is Ownable {
 
     function withdrawLBNB2BNBPool(uint256 _amount, uint256 _farmingIdx) public {
         FarmingInfo storage farmingInfo = farmingInfoMap[_farmingIdx];
+        require(farmingInfo.poolID==POOL_ID_LP_LBNB_BNB, "pool id mismatch");
         require(farmingInfo.userAddr==msg.sender, "can't withdraw other farming");
         require(_amount>0, "withdraw amount must be positive");
         require(farmingInfo.amount>=_amount, "withdraw amount too much");
@@ -319,7 +325,7 @@ contract FarmingCenter is Ownable {
         lpLBNB2BNB.safeTransfer(msg.sender, _amount);
 
         if (farmingInfo.amount == _amount) {
-            uint256[] storage farmingIdxs = userToFarmingIDsMap[msg.sender];
+            uint256[] storage farmingIdxs = userToFarmingIDsMap[msg.sender][POOL_ID_LP_LBNB_BNB];
             uint256 farmingIdxsLength = farmingIdxs.length;
             for (uint256 idx=0;idx<farmingIdxsLength;idx++){
                 if (farmingIdxs[idx]==_farmingIdx) {
@@ -351,7 +357,7 @@ contract FarmingCenter is Ownable {
                 timestamp: block.timestamp,
                 farmingPhaseAmount: 3
             });
-            userToFarmingIDsMap[msg.sender].push(farmingIdx);
+            userToFarmingIDsMap[msg.sender][POOL_ID_LP_SBF_BUSD].push(farmingIdx);
             farmingIdx++;
         }
 
@@ -366,6 +372,7 @@ contract FarmingCenter is Ownable {
 
     function withdrawSBF2BUSDPool(uint256 _amount, uint256 _farmingIdx) public {
         FarmingInfo storage farmingInfo = farmingInfoMap[_farmingIdx];
+        require(farmingInfo.poolID==POOL_ID_LP_SBF_BUSD, "pool id mismatch");
         require(farmingInfo.userAddr==msg.sender, "can't withdraw other farming");
         require(_amount>0, "withdraw amount must be positive");
         require(farmingInfo.amount>=_amount, "withdraw amount too much");
@@ -380,7 +387,7 @@ contract FarmingCenter is Ownable {
         lpSBF2BUSD.safeTransfer(msg.sender, _amount);
 
         if (farmingInfo.amount == _amount) {
-            uint256[] storage farmingIdxs = userToFarmingIDsMap[msg.sender];
+            uint256[] storage farmingIdxs = userToFarmingIDsMap[msg.sender][POOL_ID_LP_SBF_BUSD];
             uint256 farmingIdxsLength = farmingIdxs.length;
             for (uint256 idx=0;idx<farmingIdxsLength;idx++){
                 if (farmingIdxs[idx]==_farmingIdx) {
@@ -403,41 +410,52 @@ contract FarmingCenter is Ownable {
         }
     }
 
+    function harvest(uint256 _pid) public {
+        require(_pid==POOL_ID_SBF|| _pid==POOL_ID_LP_SBF_BUSD|| _pid==POOL_ID_LP_LBNB_BNB, "wrong pool id");
+        farmingPhase1.deposit(_pid, 0, msg.sender);
+        farmingPhase2.deposit(_pid, 0, msg.sender);
+        farmingPhase3.deposit(_pid, 0, msg.sender);
+        farmingPhase4.deposit(_pid, 0, msg.sender);
+    }
+
     function emergencyWithdrawSBF(uint256[] memory _farmingIdxs) public {
         for(uint256 idx=0;idx<_farmingIdxs.length;idx++){
             FarmingInfo memory farmingInfo = farmingInfoMap[_farmingIdxs[idx]];
+            require(farmingInfo.poolID==POOL_ID_SBF, "wrong pool id");
             require(farmingInfo.userAddr==msg.sender, "can't withdraw other farming");
             sbf.safeTransfer(address(msg.sender), farmingInfo.amount);
             emit EmergencyWithdraw(msg.sender, POOL_ID_SBF, farmingInfo.amount);
             delete farmingInfoMap[_farmingIdxs[idx]];
-            deleteUserFarmingIDs(_farmingIdxs[idx]);
+            deleteUserFarmingIDs(_farmingIdxs[idx], POOL_ID_SBF);
         }
     }
 
     function emergencyWithdrawLBNB2BNBLP(uint256[] memory _farmingIdxs) public {
         for(uint256 idx=0;idx<_farmingIdxs.length;idx++){
             FarmingInfo memory farmingInfo = farmingInfoMap[_farmingIdxs[idx]];
+            require(farmingInfo.poolID==POOL_ID_LP_LBNB_BNB, "wrong pool id");
             require(farmingInfo.userAddr==msg.sender, "can't withdraw other farming");
             lpLBNB2BNB.safeTransfer(address(msg.sender), farmingInfo.amount);
             emit EmergencyWithdraw(msg.sender, POOL_ID_LP_LBNB_BNB, farmingInfo.amount);
             delete farmingInfoMap[_farmingIdxs[idx]];
-            deleteUserFarmingIDs(_farmingIdxs[idx]);
+            deleteUserFarmingIDs(_farmingIdxs[idx], POOL_ID_LP_LBNB_BNB);
         }
     }
 
     function emergencyWithdrawSBF2BUSDLP(uint256[] memory _farmingIdxs) public {
         for(uint256 idx=0;idx<_farmingIdxs.length;idx++){
             FarmingInfo memory farmingInfo = farmingInfoMap[_farmingIdxs[idx]];
+            require(farmingInfo.poolID==POOL_ID_LP_SBF_BUSD, "wrong pool id");
             require(farmingInfo.userAddr==msg.sender, "can't withdraw other farming");
             lpSBF2BUSD.safeTransfer(address(msg.sender), farmingInfo.amount);
-            emit EmergencyWithdraw(msg.sender, POOL_ID_SBF, farmingInfo.amount);
+            emit EmergencyWithdraw(msg.sender, POOL_ID_LP_SBF_BUSD, farmingInfo.amount);
             delete farmingInfoMap[_farmingIdxs[idx]];
-            deleteUserFarmingIDs(_farmingIdxs[idx]);
+            deleteUserFarmingIDs(_farmingIdxs[idx], POOL_ID_LP_SBF_BUSD);
         }
     }
 
-    function deleteUserFarmingIDs(uint256 _idx) internal {
-        uint256[] storage farmingIdxs = userToFarmingIDsMap[msg.sender];
+    function deleteUserFarmingIDs(uint256 _idx, uint256 _pid) internal {
+        uint256[] storage farmingIdxs = userToFarmingIDsMap[msg.sender][_pid];
         uint256 farmingIdxsLength = farmingIdxs.length;
         for (uint256 idx=0;idx<farmingIdxsLength;idx++){
             if (farmingIdxs[idx]==_idx) {

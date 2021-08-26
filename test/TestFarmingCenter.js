@@ -32,7 +32,7 @@ contract('SteakBank Contract', (accounts) => {
         );
 
         await farmingCenterInst.startFarmingPeriod(
-            1000,
+            100,
             100,
             web3.utils.toBN(100).mul(web3.utils.toBN(1e18)),
             {from: accounts[0]}
@@ -50,7 +50,7 @@ contract('SteakBank Contract', (accounts) => {
         assert.equal(startBlock, "100", "wrong startBlock");
 
         const endBlock = await farmingPhase1Inst.endBlock();
-        assert.equal(endBlock, "1100", "wrong endBlock");
+        assert.equal(endBlock, "200", "wrong endBlock");
     });
     it('Test SBF Pool Deposit and Withdraw', async () => {
         const farmingCenterInst = await FarmingCenter.deployed();
@@ -180,6 +180,7 @@ contract('SteakBank Contract', (accounts) => {
 
         let farmingIdx1 = await farmingCenterInst.farmingIdx();
         await farmingCenterInst.depositLBNB2BNBPool(web3.utils.toBN(1e18).mul(web3.utils.toBN(10)), {from: player0});
+        await farmingCenterInst.depositLBNB2BNBPool(web3.utils.toBN(1e18).mul(web3.utils.toBN(10)), {from: player1});
 
         await time.advanceBlock();
 
@@ -213,11 +214,89 @@ contract('SteakBank Contract', (accounts) => {
 
         let farmingIdx1 = await farmingCenterInst.farmingIdx();
         await farmingCenterInst.depositSBF2BUSDPool(web3.utils.toBN(1e18).mul(web3.utils.toBN(10)), {from: player0});
+        await farmingCenterInst.depositSBF2BUSDPool(web3.utils.toBN(1e18).mul(web3.utils.toBN(10)), {from: player1});
 
         await time.advanceBlock();
 
         const aSBF2BUSDLPInst = await aSBF2BUSDLP.deployed();
         await aSBF2BUSDLPInst.approve(FarmingCenter.address, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e10)),{from: player0});
         await farmingCenterInst.batchWithdrawSBF2BUSDPool([farmingIdx0, farmingIdx1], {from: player0});
+    });
+    it('Test Stop Farming', async () => {
+        const farmingCenterInst = await FarmingCenter.deployed();
+
+        const ownerAcc = accounts[0];
+        const player0 = accounts[2];
+        const player1 = accounts[3];
+        const player2 = accounts[4];
+
+        await time.advanceBlockTo(180);
+
+        await farmingCenterInst.harvest(0, {from: player0});
+        await farmingCenterInst.harvest(0, {from: player1});
+        await farmingCenterInst.harvest(0, {from: player2});
+
+        await farmingCenterInst.harvest(1, {from: player0});
+        await farmingCenterInst.harvest(1, {from: player1});
+        await farmingCenterInst.harvest(1, {from: player2});
+
+        await farmingCenterInst.harvest(2, {from: player0});
+        await farmingCenterInst.harvest(2, {from: player1});
+        await farmingCenterInst.harvest(2, {from: player2});
+
+        await time.advanceBlockTo(190);
+        await farmingCenterInst.stopFarming({from: ownerAcc});
+
+        const farmingPhase1Inst = await FarmingPhase1.deployed();
+        const sbfPerBlockPhase1 = await farmingPhase1Inst.sbfPerBlock();
+        assert.equal(sbfPerBlockPhase1, "0", "wrong sbfPerBlock");
+
+        const farmingPhase2Inst = await FarmingPhase2.deployed();
+        const sbfPerBlockPhase2 = await farmingPhase2Inst.sbfPerBlock();
+        assert.equal(sbfPerBlockPhase2, "0", "wrong sbfPerBlock");
+
+        const farmingPhase3Inst = await FarmingPhase3.deployed();
+        const sbfPerBlockPhase3 = await farmingPhase3Inst.sbfPerBlock();
+        assert.equal(sbfPerBlockPhase3, "0", "wrong sbfPerBlock");
+
+        const farmingPhase4Inst = await FarmingPhase4.deployed();
+        const sbfPerBlockPhase4 = await farmingPhase4Inst.sbfPerBlock();
+        assert.equal(sbfPerBlockPhase4, "0", "wrong sbfPerBlock");
+
+        await time.advanceBlockTo(220);
+        await farmingCenterInst.redeemSBF({from: ownerAcc});
+
+        let player0FarmingIDs = await farmingCenterInst.getUserFarmingIdxs(0, player0);
+        await farmingCenterInst.emergencyWithdrawSBF(player0FarmingIDs, {from: player0});
+        player0FarmingIDs = await farmingCenterInst.getUserFarmingIdxs(1, player0);
+        await farmingCenterInst.emergencyWithdrawLBNB2BNBLP(player0FarmingIDs, {from: player0});
+        player0FarmingIDs = await farmingCenterInst.getUserFarmingIdxs(2, player0);
+        await farmingCenterInst.emergencyWithdrawSBF2BUSDLP(player0FarmingIDs, {from: player0});
+
+        let player1FarmingIDs = await farmingCenterInst.getUserFarmingIdxs(0, player1);
+        await farmingCenterInst.emergencyWithdrawSBF(player1FarmingIDs, {from: player1});
+        player1FarmingIDs = await farmingCenterInst.getUserFarmingIdxs(1, player1);
+        await farmingCenterInst.emergencyWithdrawLBNB2BNBLP(player1FarmingIDs, {from: player1});
+        player1FarmingIDs = await farmingCenterInst.getUserFarmingIdxs(2, player1);
+        await farmingCenterInst.emergencyWithdrawSBF2BUSDLP(player1FarmingIDs, {from: player1});
+
+        let player2FarmingIDs = await farmingCenterInst.getUserFarmingIdxs(0, player2);
+        await farmingCenterInst.emergencyWithdrawSBF(player2FarmingIDs, {from: player2});
+        player2FarmingIDs = await farmingCenterInst.getUserFarmingIdxs(1, player2);
+        await farmingCenterInst.emergencyWithdrawLBNB2BNBLP(player2FarmingIDs, {from: player2});
+        player2FarmingIDs = await farmingCenterInst.getUserFarmingIdxs(2, player2);
+        await farmingCenterInst.emergencyWithdrawSBF2BUSDLP(player2FarmingIDs, {from: player2});
+
+        const sbfInst = await SBF.deployed();
+        const LBNB2BNBLPInst = await LBNB2BNBLPToken.deployed();
+        const SBF2BUSDLPInst = await SBF2BUSDLPToken.deployed();
+
+        const farmingCenterSBFBalance = await sbfInst.balanceOf(FarmingCenter.address);
+        const farmingCenterLBNB2BNBLPBalance = await LBNB2BNBLPInst.balanceOf(FarmingCenter.address);
+        const farmingCenterSBF2BUSDLPBalance = await SBF2BUSDLPInst.balanceOf(FarmingCenter.address);
+
+        assert.equal(farmingCenterSBFBalance, "0", "wrong balance");
+        assert.equal(farmingCenterLBNB2BNBLPBalance, "0", "wrong balance");
+        assert.equal(farmingCenterSBF2BUSDLPBalance, "0", "wrong balance");
     });
 });
