@@ -114,6 +114,7 @@ contract FarmingCenter is Ownable {
 
     function startFarmingPeriod(uint256 _farmingPeriod, uint256 _startHeight, uint256 _sbfRewardPerBlock) public onlyOwner {
         require(pool_initialized, "farm pools are not initialized");
+        require(block.number >= endBlock, "start farming twice");
 
         startBlock = _startHeight;
         endBlock = _startHeight.add(_farmingPeriod);
@@ -386,6 +387,9 @@ contract FarmingCenter is Ownable {
             FarmingInfo memory farmingInfo = farmingInfoMap[_farmingIdxs[idx]];
             require(farmingInfo.userAddr==msg.sender, "can't withdraw other farming");
             require(farmingInfo.poolID==POOL_ID_SBF, "pool id mismatch");
+            for(uint256 farmingPhaseIdx=0; farmingPhaseIdx<farmingInfo.farmingPhaseAmount; farmingPhaseIdx++) {
+                farmingPhases[farmingPhaseIdx].emergencyWithdraw(POOL_ID_SBF, farmingInfo.amount, msg.sender);
+            }
             sbf.safeTransfer(address(msg.sender), farmingInfo.amount);
             emit EmergencyWithdraw(msg.sender, POOL_ID_SBF, farmingInfo.amount);
             delete farmingInfoMap[_farmingIdxs[idx]];
@@ -398,6 +402,9 @@ contract FarmingCenter is Ownable {
             FarmingInfo memory farmingInfo = farmingInfoMap[_farmingIdxs[idx]];
             require(farmingInfo.userAddr==msg.sender, "can't withdraw other farming");
             require(farmingInfo.poolID==POOL_ID_LP_LBNB_BNB, "pool id mismatch");
+            for(uint256 farmingPhaseIdx=0; farmingPhaseIdx<farmingInfo.farmingPhaseAmount; farmingPhaseIdx++) {
+                farmingPhases[farmingPhaseIdx].emergencyWithdraw(POOL_ID_LP_LBNB_BNB, farmingInfo.amount, msg.sender);
+            }
             lpLBNB2BNB.safeTransfer(address(msg.sender), farmingInfo.amount);
             emit EmergencyWithdraw(msg.sender, POOL_ID_LP_LBNB_BNB, farmingInfo.amount);
             delete farmingInfoMap[_farmingIdxs[idx]];
@@ -410,6 +417,9 @@ contract FarmingCenter is Ownable {
             FarmingInfo memory farmingInfo = farmingInfoMap[_farmingIdxs[idx]];
             require(farmingInfo.userAddr==msg.sender, "can't withdraw other farming");
             require(farmingInfo.poolID==POOL_ID_LP_SBF_BUSD, "pool id mismatch");
+            for(uint256 farmingPhaseIdx=0; farmingPhaseIdx<farmingInfo.farmingPhaseAmount; farmingPhaseIdx++) {
+                farmingPhases[farmingPhaseIdx].emergencyWithdraw(POOL_ID_LP_SBF_BUSD, farmingInfo.amount, msg.sender);
+            }
             lpSBF2BUSD.safeTransfer(address(msg.sender), farmingInfo.amount);
             emit EmergencyWithdraw(msg.sender, POOL_ID_LP_SBF_BUSD, farmingInfo.amount);
             delete farmingInfoMap[_farmingIdxs[idx]];
