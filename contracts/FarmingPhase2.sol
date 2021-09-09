@@ -209,11 +209,12 @@ contract FarmingPhase2 is Ownable, IFarm {
 
     function emergencyWithdraw(uint256 _pid, uint256 _amount, address _userAddr) override external onlyOwner {
         require(_pid < poolInfo.length, "invalid pool id");
+        updatePool(_pid);
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_userAddr];
         emit EmergencyWithdraw(_userAddr, _pid, _amount);
         user.amount = user.amount.sub(_amount);
-        user.rewardDebt = 0;
+        user.rewardDebt = user.amount.mul(pool.accSBFPerShare).div(REWARD_CALCULATE_PRECISION);
         lpSupplyMap[_pid] = lpSupplyMap[_pid].sub(_amount);
     }
 
