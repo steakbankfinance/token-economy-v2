@@ -207,13 +207,14 @@ contract FarmingPhase1 is Ownable, IFarm {
         emit Withdraw(_userAddr, _pid, _amount, reward, taxAmount);
     }
 
-    function emergencyWithdraw(uint256 _pid, uint256 _amount, address _userAddr) override external {
+    function emergencyWithdraw(uint256 _pid, uint256 _amount, address _userAddr) override external onlyOwner {
         require(_pid < poolInfo.length, "invalid pool id");
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_userAddr];
         emit EmergencyWithdraw(_userAddr, _pid, _amount);
         user.amount = user.amount.sub(_amount);
         user.rewardDebt = 0;
+        lpSupplyMap[_pid] = lpSupplyMap[_pid].sub(_amount);
     }
 
     function redeemSBF(address recipient) override external onlyOwner {
