@@ -105,8 +105,8 @@ contract FarmingPhase1 is Ownable, IFarm {
             massUpdatePools();
         }
         uint256 prevAllocPoint = poolInfo[_pid].allocPoint;
-        poolInfo[_pid].allocPoint = _allocPoint;
         if (prevAllocPoint != _allocPoint) {
+            poolInfo[_pid].allocPoint = _allocPoint;
             totalAllocPoint = totalAllocPoint.sub(prevAllocPoint).add(_allocPoint);
         }
     }

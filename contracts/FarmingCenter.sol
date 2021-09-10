@@ -387,6 +387,10 @@ contract FarmingCenter is Ownable {
             FarmingInfo memory farmingInfo = farmingInfoMap[_farmingIdxs[idx]];
             require(farmingInfo.userAddr==msg.sender, "can't withdraw other farming");
             require(farmingInfo.poolID==POOL_ID_SBF, "pool id mismatch");
+
+            IBEP20(aSBF).transferFrom(msg.sender, address(this), farmingInfo.amount);
+            IMintBurnToken(aSBF).burn(farmingInfo.amount);
+
             for(uint256 farmingPhaseIdx=0; farmingPhaseIdx<farmingInfo.farmingPhaseAmount; farmingPhaseIdx++) {
                 farmingPhases[farmingPhaseIdx].emergencyWithdraw(POOL_ID_SBF, farmingInfo.amount, msg.sender);
             }
@@ -402,6 +406,10 @@ contract FarmingCenter is Ownable {
             FarmingInfo memory farmingInfo = farmingInfoMap[_farmingIdxs[idx]];
             require(farmingInfo.userAddr==msg.sender, "can't withdraw other farming");
             require(farmingInfo.poolID==POOL_ID_LP_LBNB_BNB, "pool id mismatch");
+
+            IBEP20(aLBNB2BNBLP).transferFrom(msg.sender, address(this), farmingInfo.amount);
+            IMintBurnToken(aLBNB2BNBLP).burn(farmingInfo.amount);
+
             for(uint256 farmingPhaseIdx=0; farmingPhaseIdx<farmingInfo.farmingPhaseAmount; farmingPhaseIdx++) {
                 farmingPhases[farmingPhaseIdx].emergencyWithdraw(POOL_ID_LP_LBNB_BNB, farmingInfo.amount, msg.sender);
             }
@@ -417,6 +425,10 @@ contract FarmingCenter is Ownable {
             FarmingInfo memory farmingInfo = farmingInfoMap[_farmingIdxs[idx]];
             require(farmingInfo.userAddr==msg.sender, "can't withdraw other farming");
             require(farmingInfo.poolID==POOL_ID_LP_SBF_BUSD, "pool id mismatch");
+
+            IBEP20(aSBF2BUSDLP).transferFrom(msg.sender, address(this), farmingInfo.amount);
+            IMintBurnToken(aSBF2BUSDLP).burn(farmingInfo.amount);
+
             for(uint256 farmingPhaseIdx=0; farmingPhaseIdx<farmingInfo.farmingPhaseAmount; farmingPhaseIdx++) {
                 farmingPhases[farmingPhaseIdx].emergencyWithdraw(POOL_ID_LP_SBF_BUSD, farmingInfo.amount, msg.sender);
             }
@@ -433,10 +445,10 @@ contract FarmingCenter is Ownable {
         for (uint256 idx=0;idx<farmingIdxsLength;idx++){
             if (farmingIdxs[idx]==_idx) {
                 farmingIdxs[idx]=farmingIdxs[farmingIdxsLength-1];
+                farmingIdxs.pop();
                 break;
             }
         }
-        farmingIdxs.pop();
     }
 
     function migrateSBFPoolAgeFarming(uint256 _farmingIdx) public {
