@@ -105,8 +105,8 @@ contract FarmingPhase1 is Ownable, IFarm {
             massUpdatePools();
         }
         uint256 prevAllocPoint = poolInfo[_pid].allocPoint;
-        poolInfo[_pid].allocPoint = _allocPoint;
         if (prevAllocPoint != _allocPoint) {
+            poolInfo[_pid].allocPoint = _allocPoint;
             totalAllocPoint = totalAllocPoint.sub(prevAllocPoint).add(_allocPoint);
         }
     }
@@ -205,6 +205,17 @@ contract FarmingPhase1 is Ownable, IFarm {
         user.rewardDebt = user.amount.mul(pool.accSBFPerShare).div(REWARD_CALCULATE_PRECISION);
         lpSupplyMap[_pid] = lpSupplyMap[_pid].sub(_amount);
         emit Withdraw(_userAddr, _pid, _amount, reward, taxAmount);
+    }
+
+    function emergencyWithdraw(uint256 _pid, uint256 _amount, address _userAddr) override external onlyOwner {
+        require(_pid < poolInfo.length, "invalid pool id");
+        updatePool(_pid);
+        PoolInfo storage pool = poolInfo[_pid];
+        UserInfo storage user = userInfo[_pid][_userAddr];
+        emit EmergencyWithdraw(_userAddr, _pid, _amount);
+        user.amount = user.amount.sub(_amount);
+        user.rewardDebt = user.amount.mul(pool.accSBFPerShare).div(REWARD_CALCULATE_PRECISION);
+        lpSupplyMap[_pid] = lpSupplyMap[_pid].sub(_amount);
     }
 
     function redeemSBF(address recipient) override external onlyOwner {

@@ -271,6 +271,22 @@ contract('SteakBank Contract', (accounts) => {
         await time.advanceBlockTo(220);
         await farmingCenterInst.redeemSBF({from: ownerAcc});
 
+        const aSBFInst = await aSBF.deployed();
+        const aLBNB2BNBLPInst = await aLBNB2BNBLP.deployed();
+        const aSBF2BUSDLPInst = await aSBF2BUSDLP.deployed()
+
+        await aSBFInst.approve(FarmingCenter.address, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e10)),{from: player0});
+        await aLBNB2BNBLPInst.approve(FarmingCenter.address, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e10)),{from: player0});
+        await aSBF2BUSDLPInst.approve(FarmingCenter.address, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e10)),{from: player0});
+
+        await aSBFInst.approve(FarmingCenter.address, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e10)),{from: player1});
+        await aLBNB2BNBLPInst.approve(FarmingCenter.address, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e10)),{from: player1});
+        await aSBF2BUSDLPInst.approve(FarmingCenter.address, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e10)),{from: player1});
+
+        await aSBFInst.approve(FarmingCenter.address, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e10)),{from: player2});
+        await aLBNB2BNBLPInst.approve(FarmingCenter.address, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e10)),{from: player2});
+        await aSBF2BUSDLPInst.approve(FarmingCenter.address, web3.utils.toBN(1e18).mul(web3.utils.toBN(1e10)),{from: player2});
+
         let player0FarmingIDs = await farmingCenterInst.getUserFarmingIdxs(0, player0);
         await farmingCenterInst.emergencyWithdrawSBF(player0FarmingIDs, {from: player0});
         player0FarmingIDs = await farmingCenterInst.getUserFarmingIdxs(1, player0);
